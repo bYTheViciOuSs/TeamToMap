@@ -1,0 +1,2315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UEFA Team Quiz</title>
+  <meta name="description" content="UEFA Team Quiz – ¿Cuántos equipos puedes nombrar?">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --surface: #121a2b;
+      --surface-2: #1a2438;
+      --border: #243049;
+      --text: #e8eef9;
+      --muted: #8b9bb8;
+      --accent: #e11d48;
+      --accent-soft: rgba(225, 29, 72, 0.15);
+      --success: #22c55e;
+      --success-soft: rgba(34, 197, 94, 0.15);
+      --warn: #f59e0b;
+      --radius: 12px;
+      --shadow: 0 8px 30px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      background: linear-gradient(180deg, #151e30 0%, var(--surface) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 20;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #e11d48, #be123c);
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.4);
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .brand h1 span {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .score-pill {
+      background: var(--accent-soft);
+      border: 1px solid rgba(225, 29, 72, 0.35);
+      color: #fda4af;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-pill strong { color: #fff; font-size: 1.05rem; }
+
+    /* Mode selector */
+    .mode-select {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .mode-btn:hover { color: var(--text); }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, #e11d48, #be123c);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(225, 29, 72, 0.35);
+    }
+
+    .mode-hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding: 0 2px;
+    }
+
+
+    .input-wrap {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    #team-input {
+      width: 100%;
+      padding: 11px 16px 11px 42px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    #team-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    #team-input::placeholder { color: #5a6a85; }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn:hover { background: #243049; border-color: #334155; }
+    .btn:active { transform: scale(0.97); }
+    .btn.danger:hover { border-color: rgba(225,29,72,0.5); color: #fda4af; }
+    .btn.primary {
+      background: linear-gradient(135deg, #e11d48, #be123c);
+      border-color: transparent;
+      color: #fff;
+    }
+    .btn.primary:hover { filter: brightness(1.08); }
+
+    
+    /* League filter */
+    .league-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .league-row::-webkit-scrollbar { height: 4px; }
+    .league-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .league-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .league-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: nowrap;
+    }
+
+    .league-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .league-chip:hover {
+      color: var(--text);
+      border-color: #475569;
+    }
+
+    .league-chip.active {
+      background: rgba(225, 29, 72, 0.18);
+      border-color: rgba(225, 29, 72, 0.55);
+      color: #fda4af;
+    }
+
+    .league-chip .chip-count {
+      opacity: 0.75;
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    /* Progress */
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 6px;
+      background: var(--surface-2);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #e11d48, #f43f5e, #fb7185);
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .progress-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .progress-meta strong { color: var(--text); }
+
+    /* Feedback toast */
+    #feedback {
+      position: fixed;
+      top: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-12px);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 1000;
+      box-shadow: var(--shadow);
+    }
+
+    #feedback.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #feedback.ok { background: #14532d; color: #86efac; border: 1px solid #22c55e; }
+    #feedback.err { background: #450a0a; color: #fca5a5; border: 1px solid #ef4444; }
+
+    /* ===== MAIN ===== */
+    main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      position: relative;
+    }
+
+    #map {
+      flex: 1;
+      background: #0d1524;
+    }
+
+    /* Sidebar */
+    aside {
+      width: 320px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .aside-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .aside-tab {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .aside-tab.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+
+    .aside-panel {
+      flex: 1;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .aside-panel.active { display: block; }
+
+    #named-list { list-style: none; padding: 6px 0; }
+
+    #named-list li {
+      padding: 10px 16px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid rgba(36, 48, 73, 0.6);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    #named-list li:hover { background: var(--surface-2); }
+
+    #named-list .team-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    #named-list .team-loc {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .empty-state {
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state .icon {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+
+    .empty-state p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Country stats */
+    #country-stats {
+      padding: 8px 0;
+    }
+
+    .country-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(36, 48, 73, 0.5);
+      cursor: default;
+    }
+
+    .country-row .bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .country-row .bar {
+      height: 100%;
+      background: linear-gradient(90deg, #e11d48, #fb7185);
+      border-radius: 4px;
+      transition: width 0.35s ease;
+    }
+
+    .country-row .c-name {
+      width: 110px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .country-row .c-count {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #fda4af;
+      min-width: 36px;
+      text-align: right;
+    }
+
+    /* Footer */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    footer a { color: #94a3b8; text-decoration: none; }
+    footer a:hover { color: #e2e8f0; }
+
+    .timer {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+
+    /* Leaflet tweaks */
+    .leaflet-popup-content-wrapper {
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 0;
+    }
+
+    .leaflet-popup-content {
+      margin: 12px 14px !important;
+      font-family: 'Inter', sans-serif;
+      color: #1e293b;
+      line-height: 1.4;
+    }
+
+    .leaflet-popup-content strong {
+      color: #e11d48;
+      font-size: 0.95rem;
+    }
+
+    .leaflet-container a { color: #e11d48; }
+
+    /* Custom marker pulse */
+    .red-dot-wrap {
+      position: relative;
+      width: 14px;
+      height: 14px;
+    }
+
+    .red-dot-core {
+      width: 12px;
+      height: 12px;
+      background: #e11d48;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(225, 29, 72, 0.85);
+      position: absolute;
+      top: 1px;
+      left: 1px;
+    }
+
+    .red-dot-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      background: rgba(225, 29, 72, 0.35);
+      animation: pulse 1.2s ease-out;
+      opacity: 0;
+    }
+
+    .red-dot-wrap.new .red-dot-pulse {
+      animation: pulse 1.2s ease-out;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.6); opacity: 0.8; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .modal h3 {
+      font-size: 1.15rem;
+      margin-bottom: 8px;
+    }
+
+    .modal p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      header { padding: 10px 12px 8px; gap: 10px; }
+      .brand h1 { font-size: 1rem; }
+      .brand h1 span { font-size: 0.62rem; }
+      .score-pill { font-size: 0.8rem; padding: 5px 10px; }
+      .mode-select { order: 3; width: 100%; }
+      .league-row { order: 4; width: 100%; }
+      .mode-btn { flex: 1; text-align: center; padding: 8px 6px; font-size: 0.72rem; }
+      .actions { width: 100%; justify-content: flex-end; }
+      aside {
+        width: 100%;
+        height: 200px;
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+      main { flex-direction: column; }
+      footer { font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="top-row">
+      <div class="brand">
+        <div class="brand-icon">⚽</div>
+        <h1 id="brand-title">UEFA Team Quiz<span id="brand-sub">Mapa · Clubes europeos</span></h1>
+      </div>
+
+      <div class="mode-select" id="mode-select" role="group" aria-label="Ámbito del mapa">
+        <button type="button" class="mode-btn active" data-mode="uefa">🌍 UEFA</button>
+        <button type="button" class="mode-btn" data-mode="espana">🇪🇸 España</button>
+        <button type="button" class="mode-btn" data-mode="inglaterra">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra</button>
+      </div>
+
+      <div class="score-pill" id="score-pill">
+        <strong id="score-num">0</strong>
+        <span id="score-label">/ 0</span>
+      </div>
+
+      <div class="input-wrap">
+        <span class="input-icon">🔍</span>
+        <input type="text" id="team-input" placeholder="Escribe un equipo… (Real Madrid, Bayern, Ajax…)" autocomplete="off" autofocus>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btn-fit" title="Ajustar mapa a los puntos">🗺️ Ajustar</button>
+        <button class="btn" id="btn-share" title="Compartir puntuación">📤 Compartir</button>
+        <button class="btn danger" id="btn-reset" title="Reiniciar progreso">↺ Reiniciar</button>
+      </div>
+    </div>
+
+    <div class="progress-row">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-meta">
+        <strong id="pct">0%</strong> · <span id="remaining">0 restantes</span>
+      </div>
+    </div>
+
+    <div class="league-row" id="league-row">
+      <span class="league-label">Liga</span>
+      <div class="league-chips" id="league-chips"></div>
+    </div>
+  </header>
+
+  <div id="feedback"></div>
+
+  <main>
+    <div id="map"></div>
+    <aside>
+      <div class="aside-tabs">
+        <button class="aside-tab active" data-tab="list">Acertados</button>
+        <button class="aside-tab" data-tab="countries">Por país</button>
+      </div>
+      <div class="aside-panel active" id="panel-list">
+        <ul id="named-list">
+          <li class="empty-state" style="display:block;list-style:none;border:none;">
+            <div class="icon">🏟️</div>
+            <p>Empieza a escribir nombres de equipos de fútbol europeos.<br>Cada acierto coloca un punto rojo en el mapa.</p>
+          </li>
+        </ul>
+      </div>
+      <div class="aside-panel" id="panel-countries">
+        <div id="country-stats">
+          <div class="empty-state">
+            <div class="icon">🌍</div>
+            <p>Aquí verás cuántos equipos has acertado por país.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <span>Inspirado en CityQuiz.io · Elige mapa UEFA / España / Inglaterra · Progreso guardado</span>
+    <span class="timer" id="timer">⏱ 00:00</span>
+  </footer>
+
+  <!-- Modal reinicio -->
+  <div class="modal-backdrop" id="modal-reset">
+    <div class="modal">
+      <h3>¿Reiniciar partida?</h3>
+      <p>Se borrarán todos los equipos acertados y el progreso guardado. Esta acción no se puede deshacer.</p>
+      <div class="modal-actions">
+        <button class="btn" id="modal-cancel">Cancelar</button>
+        <button class="btn primary" id="modal-confirm">Sí, reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+const TEAMS = [
+      { name: "Real Madrid", aliases: ["madrid", "real madrid cf", "rm"], lat: 40.4531, lon: -3.6883, city: "Madrid", country: "España" },
+      { name: "FC Barcelona", aliases: ["barcelona", "barça", "barca", "fcb"], lat: 41.3809, lon: 2.1228, city: "Barcelona", country: "España" },
+      { name: "Atlético de Madrid", aliases: ["atletico", "atlético", "atleti", "atletico madrid", "atlético madrid"], lat: 40.4362, lon: -3.5995, city: "Madrid", country: "España" },
+      { name: "Sevilla FC", aliases: ["sevilla", "sevilla fc"], lat: 37.3841, lon: -5.9706, city: "Sevilla", country: "España" },
+      { name: "Real Betis", aliases: ["betis", "real betis"], lat: 37.3565, lon: -5.9817, city: "Sevilla", country: "España" },
+      { name: "Valencia CF", aliases: ["valencia", "valencia cf"], lat: 39.4747, lon: -0.3584, city: "Valencia", country: "España" },
+      { name: "Athletic Club", aliases: ["athletic", "athletic bilbao", "bilbao"], lat: 43.2642, lon: -2.9494, city: "Bilbao", country: "España" },
+      { name: "Real Sociedad", aliases: ["real sociedad", "sociedad", "la real"], lat: 43.3014, lon: -1.9736, city: "San Sebastián", country: "España" },
+      { name: "Villarreal CF", aliases: ["villarreal", "villarreal cf"], lat: 39.9441, lon: -0.1035, city: "Villarreal", country: "España" },
+      { name: "Real Zaragoza", aliases: ["zaragoza", "real zaragoza"], lat: 41.6365, lon: -0.9018, city: "Zaragoza", country: "España" },
+      { name: "RC Celta de Vigo", aliases: ["celta", "celta de vigo", "celta vigo"], lat: 42.2118, lon: -8.7397, city: "Vigo", country: "España" },
+      { name: "RCD Espanyol", aliases: ["espanyol", "español"], lat: 41.3479, lon: 2.0754, city: "Barcelona", country: "España" },
+      { name: "CA Osasuna", aliases: ["osasuna"], lat: 42.7967, lon: -1.6369, city: "Pamplona", country: "España" },
+      { name: "Getafe CF", aliases: ["getafe"], lat: 40.3255, lon: -3.7149, city: "Getafe", country: "España" },
+      { name: "Rayo Vallecano", aliases: ["rayo", "rayo vallecano"], lat: 40.3919, lon: -3.6587, city: "Madrid", country: "España" },
+      { name: "UD Las Palmas", aliases: ["las palmas"], lat: 28.1004, lon: -15.4567, city: "Las Palmas", country: "España" },
+      { name: "RCD Mallorca", aliases: ["mallorca"], lat: 39.5899, lon: 2.6301, city: "Palma", country: "España" },
+      { name: "Girona FC", aliases: ["girona"], lat: 41.9614, lon: 2.8286, city: "Girona", country: "España" },
+      { name: "Deportivo Alavés", aliases: ["alaves", "alavés"], lat: 42.8372, lon: -2.6881, city: "Vitoria", country: "España" },
+      { name: "Cádiz CF", aliases: ["cadiz", "cádiz"], lat: 36.503, lon: -6.273, city: "Cádiz", country: "España" },
+      { name: "Elche CF", aliases: ["elche"], lat: 38.267, lon: -0.663, city: "Elche", country: "España" },
+      { name: "Real Oviedo", aliases: ["oviedo"], lat: 43.365, lon: -5.87, city: "Oviedo", country: "España" },
+      { name: "Sporting de Gijón", aliases: ["sporting", "sporting gijon", "sporting gijón"], lat: 43.536, lon: -5.634, city: "Gijón", country: "España" },
+      { name: "Deportivo de La Coruña", aliases: ["deportivo", "depor", "la coruña", "coruña"], lat: 43.368, lon: -8.417, city: "A Coruña", country: "España" },
+      { name: "Levante UD", aliases: ["levante"], lat: 39.4947, lon: -0.3642, city: "Valencia", country: "España" },
+      { name: "Granada CF", aliases: ["granada"], lat: 37.153, lon: -3.5957, city: "Granada", country: "España" },
+      { name: "Málaga CF", aliases: ["malaga", "málaga"], lat: 36.7341, lon: -4.4264, city: "Málaga", country: "España" },
+      { name: "UD Almería", aliases: ["almeria", "almería"], lat: 36.84, lon: -2.4353, city: "Almería", country: "España" },
+      { name: "Real Valladolid", aliases: ["valladolid"], lat: 41.6444, lon: -4.7611, city: "Valladolid", country: "España" },
+      { name: "CD Tenerife", aliases: ["tenerife"], lat: 28.4564, lon: -16.2958, city: "Santa Cruz de Tenerife", country: "España" },
+      { name: "SD Eibar", aliases: ["eibar"], lat: 43.1819, lon: -2.4756, city: "Eibar", country: "España" },
+      { name: "CD Leganés", aliases: ["leganes", "leganés"], lat: 40.3406, lon: -3.7606, city: "Leganés", country: "España" },
+      { name: "SD Huesca", aliases: ["huesca"], lat: 42.1314, lon: -0.4242, city: "Huesca", country: "España" },
+      { name: "Albacete Balompié", aliases: ["albacete"], lat: 38.9811, lon: -1.8519, city: "Albacete", country: "España" },
+      { name: "Real Racing Club", aliases: ["racing", "racing santander"], lat: 43.4764, lon: -3.7933, city: "Santander", country: "España" },
+      { name: "FC Cartagena", aliases: ["cartagena"], lat: 37.625, lon: -0.9967, city: "Cartagena", country: "España" },
+      { name: "SD Amorebieta", aliases: ["amorebieta"], lat: 43.22, lon: -2.7333, city: "Amorebieta", country: "España" },
+      { name: "Burgos CF", aliases: ["burgos"], lat: 42.34, lon: -3.7, city: "Burgos", country: "España" },
+      { name: "CD Mirandés", aliases: ["mirandes", "mirandés"], lat: 42.6833, lon: -2.95, city: "Miranda de Ebro", country: "España" },
+      { name: "FC Andorra", aliases: ["andorra", "fc andorra"], lat: 42.5075, lon: 1.5218, city: "Andorra la Vella", country: "Andorra" },
+      { name: "Manchester United", aliases: ["man united", "man utd", "manchester utd", "united"], lat: 53.4631, lon: -2.2913, city: "Manchester", country: "Inglaterra" },
+      { name: "Manchester City", aliases: ["man city", "manchester city", "city"], lat: 53.4831, lon: -2.2003, city: "Manchester", country: "Inglaterra" },
+      { name: "Liverpool", aliases: ["liverpool fc", "lfc"], lat: 53.4308, lon: -2.9608, city: "Liverpool", country: "Inglaterra" },
+      { name: "Arsenal", aliases: ["arsenal fc", "gunners"], lat: 51.555, lon: -0.1086, city: "Londres", country: "Inglaterra" },
+      { name: "Chelsea", aliases: ["chelsea fc"], lat: 51.4817, lon: -0.1911, city: "Londres", country: "Inglaterra" },
+      { name: "Tottenham Hotspur", aliases: ["tottenham", "spurs"], lat: 51.6042, lon: -0.0662, city: "Londres", country: "Inglaterra" },
+      { name: "Newcastle United", aliases: ["newcastle", "nufc"], lat: 54.9756, lon: -1.6217, city: "Newcastle", country: "Inglaterra" },
+      { name: "Aston Villa", aliases: ["aston villa", "villa"], lat: 52.5092, lon: -1.8847, city: "Birmingham", country: "Inglaterra" },
+      { name: "West Ham United", aliases: ["west ham", "hammers"], lat: 51.5387, lon: -0.0166, city: "Londres", country: "Inglaterra" },
+      { name: "Brighton & Hove Albion", aliases: ["brighton", "brighton and hove"], lat: 50.8618, lon: -0.0833, city: "Brighton", country: "Inglaterra" },
+      { name: "Everton", aliases: ["everton fc"], lat: 53.4389, lon: -2.9664, city: "Liverpool", country: "Inglaterra" },
+      { name: "Wolverhampton Wanderers", aliases: ["wolves", "wolverhampton"], lat: 52.5903, lon: -2.1303, city: "Wolverhampton", country: "Inglaterra" },
+      { name: "Crystal Palace", aliases: ["crystal palace", "palace"], lat: 51.3983, lon: -0.0856, city: "Londres", country: "Inglaterra" },
+      { name: "Fulham", aliases: ["fulham fc"], lat: 51.475, lon: -0.2217, city: "Londres", country: "Inglaterra" },
+      { name: "Brentford", aliases: ["brentford fc"], lat: 51.4908, lon: -0.2887, city: "Londres", country: "Inglaterra" },
+      { name: "Nottingham Forest", aliases: ["nottingham forest", "forest", "nottm forest"], lat: 52.9397, lon: -1.1328, city: "Nottingham", country: "Inglaterra" },
+      { name: "Bournemouth", aliases: ["afc bournemouth", "bournemouth"], lat: 50.7352, lon: -1.8383, city: "Bournemouth", country: "Inglaterra" },
+      { name: "Leicester City", aliases: ["leicester", "leicester city"], lat: 52.6203, lon: -1.1422, city: "Leicester", country: "Inglaterra" },
+      { name: "Leeds United", aliases: ["leeds", "leeds united"], lat: 53.7778, lon: -1.5722, city: "Leeds", country: "Inglaterra" },
+      { name: "Southampton", aliases: ["southampton fc", "saints"], lat: 50.9058, lon: -1.3911, city: "Southampton", country: "Inglaterra" },
+      { name: "Ipswich Town", aliases: ["ipswich", "ipswich town"], lat: 52.0551, lon: 1.1448, city: "Ipswich", country: "Inglaterra" },
+      { name: "Sunderland", aliases: ["sunderland afc"], lat: 54.9144, lon: -1.3882, city: "Sunderland", country: "Inglaterra" },
+      { name: "Burnley", aliases: ["burnley fc"], lat: 53.7892, lon: -2.2303, city: "Burnley", country: "Inglaterra" },
+      { name: "Sheffield United", aliases: ["sheffield united", "blades"], lat: 53.3703, lon: -1.4708, city: "Sheffield", country: "Inglaterra" },
+      { name: "Sheffield Wednesday", aliases: ["sheffield wednesday", "owls"], lat: 53.4114, lon: -1.5006, city: "Sheffield", country: "Inglaterra" },
+      { name: "Middlesbrough", aliases: ["middlesbrough fc", "boro"], lat: 54.5783, lon: -1.2169, city: "Middlesbrough", country: "Inglaterra" },
+      { name: "Norwich City", aliases: ["norwich", "norwich city"], lat: 52.6221, lon: 1.3087, city: "Norwich", country: "Inglaterra" },
+      { name: "Watford", aliases: ["watford fc"], lat: 51.6498, lon: -0.4015, city: "Watford", country: "Inglaterra" },
+      { name: "West Bromwich Albion", aliases: ["west brom", "wba", "west bromwich"], lat: 52.5092, lon: -1.9639, city: "West Bromwich", country: "Inglaterra" },
+      { name: "Stoke City", aliases: ["stoke", "stoke city"], lat: 52.9883, lon: -2.1756, city: "Stoke-on-Trent", country: "Inglaterra" },
+      { name: "Birmingham City", aliases: ["birmingham", "birmingham city"], lat: 52.4757, lon: -1.8682, city: "Birmingham", country: "Inglaterra" },
+      { name: "Coventry City", aliases: ["coventry", "coventry city"], lat: 52.4481, lon: -1.4956, city: "Coventry", country: "Inglaterra" },
+      { name: "Hull City", aliases: ["hull", "hull city"], lat: 53.7461, lon: -0.3678, city: "Hull", country: "Inglaterra" },
+      { name: "Derby County", aliases: ["derby", "derby county"], lat: 52.915, lon: -1.4472, city: "Derby", country: "Inglaterra" },
+      { name: "Blackburn Rovers", aliases: ["blackburn", "blackburn rovers"], lat: 53.7286, lon: -2.4892, city: "Blackburn", country: "Inglaterra" },
+      { name: "Preston North End", aliases: ["preston", "preston north end"], lat: 53.7722, lon: -2.6881, city: "Preston", country: "Inglaterra" },
+      { name: "Bristol City", aliases: ["bristol city"], lat: 51.44, lon: -2.6203, city: "Bristol", country: "Inglaterra" },
+      { name: "Millwall", aliases: ["millwall fc"], lat: 51.486, lon: -0.051, city: "Londres", country: "Inglaterra" },
+      { name: "Queens Park Rangers", aliases: ["qpr", "queens park rangers"], lat: 51.5092, lon: -0.2322, city: "Londres", country: "Inglaterra" },
+      { name: "Swansea City", aliases: ["swansea", "swansea city"], lat: 51.6422, lon: -3.9351, city: "Swansea", country: "Gales" },
+      { name: "Cardiff City", aliases: ["cardiff", "cardiff city"], lat: 51.4728, lon: -3.2031, city: "Cardiff", country: "Gales" },
+      { name: "Plymouth Argyle", aliases: ["plymouth", "plymouth argyle"], lat: 50.3881, lon: -4.1506, city: "Plymouth", country: "Inglaterra" },
+      { name: "Oxford United", aliases: ["oxford", "oxford united"], lat: 51.7164, lon: -1.2081, city: "Oxford", country: "Inglaterra" },
+      { name: "Portsmouth", aliases: ["portsmouth fc", "pompey"], lat: 50.7964, lon: -1.0639, city: "Portsmouth", country: "Inglaterra" },
+      { name: "Luton Town", aliases: ["luton", "luton town"], lat: 51.8842, lon: -0.4316, city: "Luton", country: "Inglaterra" },
+      { name: "Charlton Athletic", aliases: ["charlton", "charlton athletic"], lat: 51.4864, lon: 0.0356, city: "Londres", country: "Inglaterra" },
+      { name: "Wrexham", aliases: ["wrexham afc", "wrexham"], lat: 53.0517, lon: -3.0033, city: "Wrexham", country: "Gales" },
+      { name: "Bayern München", aliases: ["bayern", "bayern munich", "bayern münchen", "fc bayern"], lat: 48.2188, lon: 11.6247, city: "Múnich", country: "Alemania" },
+      { name: "Borussia Dortmund", aliases: ["dortmund", "bvb", "borussia dortmund"], lat: 51.4926, lon: 7.4518, city: "Dortmund", country: "Alemania" },
+      { name: "RB Leipzig", aliases: ["leipzig", "rb leipzig"], lat: 51.3456, lon: 12.3483, city: "Leipzig", country: "Alemania" },
+      { name: "Bayer Leverkusen", aliases: ["leverkusen", "bayer", "bayer 04"], lat: 51.0382, lon: 7.0022, city: "Leverkusen", country: "Alemania" },
+      { name: "Eintracht Frankfurt", aliases: ["frankfurt", "eintracht", "sge"], lat: 50.0686, lon: 8.6455, city: "Fráncfort", country: "Alemania" },
+      { name: "VfL Wolfsburg", aliases: ["wolfsburg"], lat: 52.4325, lon: 10.8039, city: "Wolfsburgo", country: "Alemania" },
+      { name: "Borussia Mönchengladbach", aliases: ["gladbach", "mönchengladbach", "borussia mönchengladbach", "bmg"], lat: 51.1746, lon: 6.3854, city: "Mönchengladbach", country: "Alemania" },
+      { name: "SC Freiburg", aliases: ["freiburg", "sc freiburg"], lat: 47.9889, lon: 7.8428, city: "Friburgo", country: "Alemania" },
+      { name: "VfB Stuttgart", aliases: ["stuttgart", "vfb stuttgart"], lat: 48.7923, lon: 9.232, city: "Stuttgart", country: "Alemania" },
+      { name: "Werder Bremen", aliases: ["bremen", "werder"], lat: 53.0665, lon: 8.8375, city: "Bremen", country: "Alemania" },
+      { name: "1. FC Union Berlin", aliases: ["union berlin", "union"], lat: 52.4573, lon: 13.5681, city: "Berlín", country: "Alemania" },
+      { name: "FC Köln", aliases: ["koln", "köln", "cologne", "1. fc köln"], lat: 50.9335, lon: 6.8751, city: "Colonia", country: "Alemania" },
+      { name: "Mainz 05", aliases: ["mainz", "mainz 05"], lat: 49.984, lon: 8.2243, city: "Maguncia", country: "Alemania" },
+      { name: "FC Augsburg", aliases: ["augsburg"], lat: 48.3232, lon: 10.8856, city: "Augsburgo", country: "Alemania" },
+      { name: "Hoffenheim", aliases: ["hoffenheim", "tsg hoffenheim"], lat: 49.239, lon: 8.888, city: "Sinsheim", country: "Alemania" },
+      { name: "Hertha BSC", aliases: ["hertha", "hertha berlin"], lat: 52.5147, lon: 13.2394, city: "Berlín", country: "Alemania" },
+      { name: "Schalke 04", aliases: ["schalke", "schalke 04"], lat: 51.5545, lon: 7.0676, city: "Gelsenkirchen", country: "Alemania" },
+      { name: "Hamburger SV", aliases: ["hamburg", "hsv", "hamburger sv"], lat: 53.5872, lon: 9.8986, city: "Hamburgo", country: "Alemania" },
+      { name: "Hannover 96", aliases: ["hannover", "hannover 96"], lat: 52.3601, lon: 9.7312, city: "Hannover", country: "Alemania" },
+      { name: "1. FC Nürnberg", aliases: ["nürnberg", "nuremberg", "1. fc nürnberg"], lat: 49.4261, lon: 11.1258, city: "Núremberg", country: "Alemania" },
+      { name: "1. FC Kaiserslautern", aliases: ["kaiserslautern", "1. fc kaiserslautern"], lat: 49.4347, lon: 7.7767, city: "Kaiserslautern", country: "Alemania" },
+      { name: "Fortuna Düsseldorf", aliases: ["düsseldorf", "fortuna düsseldorf"], lat: 51.2617, lon: 6.7331, city: "Düsseldorf", country: "Alemania" },
+      { name: "FC St. Pauli", aliases: ["st pauli", "st. pauli", "fc st. pauli"], lat: 53.5544, lon: 9.9678, city: "Hamburgo", country: "Alemania" },
+      { name: "Holstein Kiel", aliases: ["kiel", "holstein kiel"], lat: 54.3486, lon: 10.1236, city: "Kiel", country: "Alemania" },
+      { name: "Darmstadt 98", aliases: ["darmstadt", "darmstadt 98"], lat: 49.8578, lon: 8.6728, city: "Darmstadt", country: "Alemania" },
+      { name: "Karlsruher SC", aliases: ["karlsruhe", "karlsruher sc"], lat: 49.02, lon: 8.4131, city: "Karlsruhe", country: "Alemania" },
+      { name: "Greuther Fürth", aliases: ["fürth", "greuther fürth"], lat: 49.4869, lon: 10.9992, city: "Fürth", country: "Alemania" },
+      { name: "Arminia Bielefeld", aliases: ["bielefeld", "arminia bielefeld"], lat: 52.0314, lon: 8.5169, city: "Bielefeld", country: "Alemania" },
+      { name: "Eintracht Braunschweig", aliases: ["braunschweig", "eintracht braunschweig"], lat: 52.29, lon: 10.5217, city: "Brunswick", country: "Alemania" },
+      { name: "1. FC Magdeburg", aliases: ["magdeburg", "1. fc magdeburg"], lat: 52.1256, lon: 11.67, city: "Magdeburgo", country: "Alemania" },
+      { name: "Dynamo Dresden", aliases: ["dresden", "dynamo dresden"], lat: 51.0406, lon: 13.7478, city: "Dresde", country: "Alemania" },
+      { name: "SC Paderborn", aliases: ["paderborn", "sc paderborn"], lat: 51.7314, lon: 8.7106, city: "Paderborn", country: "Alemania" },
+      { name: "VfL Bochum", aliases: ["bochum", "vfl bochum"], lat: 51.4897, lon: 7.2364, city: "Bochum", country: "Alemania" },
+      { name: "Inter Milan", aliases: ["inter", "internazionale", "inter milan", "fc internazionale"], lat: 45.4781, lon: 9.124, city: "Milán", country: "Italia" },
+      { name: "AC Milan", aliases: ["milan", "ac milan", "milan ac"], lat: 45.4781, lon: 9.124, city: "Milán", country: "Italia" },
+      { name: "Juventus", aliases: ["juve", "juventus fc"], lat: 45.1096, lon: 7.6413, city: "Turín", country: "Italia" },
+      { name: "SSC Napoli", aliases: ["napoli", "napoles", "ssc napoli"], lat: 40.8279, lon: 14.1931, city: "Nápoles", country: "Italia" },
+      { name: "AS Roma", aliases: ["roma", "as roma"], lat: 41.9341, lon: 12.4547, city: "Roma", country: "Italia" },
+      { name: "Lazio", aliases: ["ss lazio", "lazio"], lat: 41.9339, lon: 12.4547, city: "Roma", country: "Italia" },
+      { name: "Atalanta", aliases: ["atalanta bc", "atalanta"], lat: 45.7094, lon: 9.6808, city: "Bérgamo", country: "Italia" },
+      { name: "Fiorentina", aliases: ["fiorentina", "acf fiorentina"], lat: 43.7808, lon: 11.2824, city: "Florencia", country: "Italia" },
+      { name: "Torino", aliases: ["torino fc", "toro"], lat: 45.0417, lon: 7.65, city: "Turín", country: "Italia" },
+      { name: "Bologna", aliases: ["bologna fc", "bologna"], lat: 44.4922, lon: 11.3097, city: "Bolonia", country: "Italia" },
+      { name: "Udinese", aliases: ["udinese calcio", "udinese"], lat: 46.0815, lon: 13.2002, city: "Údine", country: "Italia" },
+      { name: "Sampdoria", aliases: ["sampdoria", "uc sampdoria"], lat: 44.4164, lon: 8.9525, city: "Génova", country: "Italia" },
+      { name: "Genoa", aliases: ["genoa cfc", "genoa"], lat: 44.4164, lon: 8.9525, city: "Génova", country: "Italia" },
+      { name: "Cagliari", aliases: ["cagliari calcio", "cagliari"], lat: 39.1997, lon: 9.1372, city: "Cagliari", country: "Italia" },
+      { name: "Sassuolo", aliases: ["sassuolo", "us sassuolo"], lat: 44.7144, lon: 10.6497, city: "Sassuolo", country: "Italia" },
+      { name: "Empoli", aliases: ["empoli fc", "empoli"], lat: 43.7264, lon: 10.955, city: "Empoli", country: "Italia" },
+      { name: "Hellas Verona", aliases: ["verona", "hellas verona"], lat: 45.4353, lon: 10.9686, city: "Verona", country: "Italia" },
+      { name: "Parma", aliases: ["parma calcio", "parma"], lat: 44.7947, lon: 10.3381, city: "Parma", country: "Italia" },
+      { name: "Lecce", aliases: ["us lecce", "lecce"], lat: 40.3644, lon: 18.2089, city: "Lecce", country: "Italia" },
+      { name: "Monza", aliases: ["ac monza", "monza"], lat: 45.5828, lon: 9.3081, city: "Monza", country: "Italia" },
+      { name: "Como", aliases: ["como 1907", "como"], lat: 45.8147, lon: 9.0722, city: "Como", country: "Italia" },
+      { name: "Venezia", aliases: ["venezia fc", "venezia"], lat: 45.4278, lon: 12.3569, city: "Venecia", country: "Italia" },
+      { name: "Cremonese", aliases: ["us cremonese", "cremonese"], lat: 45.1461, lon: 10.0389, city: "Cremona", country: "Italia" },
+      { name: "Frosinone", aliases: ["frosinone calcio", "frosinone"], lat: 41.6344, lon: 13.325, city: "Frosinone", country: "Italia" },
+      { name: "Palermo", aliases: ["palermo fc", "palermo"], lat: 38.1528, lon: 13.3422, city: "Palermo", country: "Italia" },
+      { name: "Bari", aliases: ["ssc bari", "bari"], lat: 41.0847, lon: 16.8389, city: "Bari", country: "Italia" },
+      { name: "Spezia", aliases: ["spezia calcio", "spezia"], lat: 44.1022, lon: 9.8089, city: "La Spezia", country: "Italia" },
+      { name: "Pisa", aliases: ["pisa sc", "pisa"], lat: 43.71, lon: 10.4017, city: "Pisa", country: "Italia" },
+      { name: "Salernitana", aliases: ["us salernitana", "salernitana"], lat: 40.645, lon: 14.8242, city: "Salerno", country: "Italia" },
+      { name: "Paris Saint-Germain", aliases: ["psg", "paris sg", "paris saint germain", "paris"], lat: 48.8414, lon: 2.253, city: "París", country: "Francia" },
+      { name: "Olympique de Marseille", aliases: ["marseille", "om", "olympique marseille"], lat: 43.2697, lon: 5.3958, city: "Marsella", country: "Francia" },
+      { name: "Olympique Lyonnais", aliases: ["lyon", "ol", "olympique lyon"], lat: 45.765, lon: 4.982, city: "Lyon", country: "Francia" },
+      { name: "AS Monaco", aliases: ["monaco", "as monaco"], lat: 43.7275, lon: 7.4156, city: "Mónaco", country: "Francia" },
+      { name: "Lille OSC", aliases: ["lille", "losc"], lat: 50.6119, lon: 3.1304, city: "Lille", country: "Francia" },
+      { name: "Stade Rennais", aliases: ["rennes", "stade rennais"], lat: 48.1074, lon: -1.7129, city: "Rennes", country: "Francia" },
+      { name: "OGC Nice", aliases: ["nice", "ogc nice"], lat: 43.705, lon: 7.1926, city: "Niza", country: "Francia" },
+      { name: "RC Lens", aliases: ["lens", "rc lens"], lat: 50.433, lon: 2.815, city: "Lens", country: "Francia" },
+      { name: "FC Nantes", aliases: ["nantes", "fc nantes"], lat: 47.2561, lon: -1.5247, city: "Nantes", country: "Francia" },
+      { name: "Stade de Reims", aliases: ["reims", "stade de reims"], lat: 49.2467, lon: 4.025, city: "Reims", country: "Francia" },
+      { name: "RC Strasbourg", aliases: ["strasbourg", "strasbourg alsace"], lat: 48.56, lon: 7.755, city: "Estrasburgo", country: "Francia" },
+      { name: "Montpellier HSC", aliases: ["montpellier", "mhsc"], lat: 43.6222, lon: 3.8122, city: "Montpellier", country: "Francia" },
+      { name: "Toulouse FC", aliases: ["toulouse", "tfc"], lat: 43.5831, lon: 1.434, city: "Toulouse", country: "Francia" },
+      { name: "Brest", aliases: ["stade brestois", "brest"], lat: 48.4028, lon: -4.4617, city: "Brest", country: "Francia" },
+      { name: "Angers SCO", aliases: ["angers", "angers sco"], lat: 47.4606, lon: -0.5308, city: "Angers", country: "Francia" },
+      { name: "AJ Auxerre", aliases: ["auxerre", "aj auxerre"], lat: 47.7867, lon: 3.5886, city: "Auxerre", country: "Francia" },
+      { name: "Le Havre AC", aliases: ["le havre", "le havre ac"], lat: 49.4972, lon: 0.1231, city: "Le Havre", country: "Francia" },
+      { name: "FC Lorient", aliases: ["lorient", "fc lorient"], lat: 47.7489, lon: -3.3694, city: "Lorient", country: "Francia" },
+      { name: "Clermont Foot", aliases: ["clermont", "clermont foot"], lat: 45.7869, lon: 3.1, city: "Clermont-Ferrand", country: "Francia" },
+      { name: "FC Metz", aliases: ["metz", "fc metz"], lat: 49.1097, lon: 6.1594, city: "Metz", country: "Francia" },
+      { name: "AS Saint-Étienne", aliases: ["saint-etienne", "saint-étienne", "asse"], lat: 45.4606, lon: 4.39, city: "Saint-Étienne", country: "Francia" },
+      { name: "Girondins de Bordeaux", aliases: ["bordeaux", "girondins"], lat: 44.8972, lon: -0.5614, city: "Burdeos", country: "Francia" },
+      { name: "Nîmes Olympique", aliases: ["nimes", "nîmes"], lat: 43.8161, lon: 4.3594, city: "Nîmes", country: "Francia" },
+      { name: "SL Benfica", aliases: ["benfica", "sl benfica"], lat: 38.7527, lon: -9.1847, city: "Lisboa", country: "Portugal" },
+      { name: "FC Porto", aliases: ["porto", "fc porto"], lat: 41.1618, lon: -8.5833, city: "Oporto", country: "Portugal" },
+      { name: "Sporting CP", aliases: ["sporting", "sporting lisbon", "sporting lisboa", "sporting cp"], lat: 38.7612, lon: -9.1609, city: "Lisboa", country: "Portugal" },
+      { name: "SC Braga", aliases: ["braga", "sc braga"], lat: 41.5625, lon: -8.43, city: "Braga", country: "Portugal" },
+      { name: "Vitória de Guimarães", aliases: ["guimaraes", "guimarães", "vitoria guimaraes"], lat: 41.4461, lon: -8.3006, city: "Guimarães", country: "Portugal" },
+      { name: "Boavista FC", aliases: ["boavista"], lat: 41.1622, lon: -8.6425, city: "Oporto", country: "Portugal" },
+      { name: "Rio Ave", aliases: ["rio ave"], lat: 41.3664, lon: -8.7397, city: "Vila do Conde", country: "Portugal" },
+      { name: "Moreirense", aliases: ["moreirense"], lat: 41.3789, lon: -8.3489, city: "Moreira de Cónegos", country: "Portugal" },
+      { name: "Famalicão", aliases: ["famalicao", "famalicão"], lat: 41.4017, lon: -8.5222, city: "Vila Nova de Famalicão", country: "Portugal" },
+      { name: "Gil Vicente", aliases: ["gil vicente"], lat: 41.5333, lon: -8.4167, city: "Barcelos", country: "Portugal" },
+      { name: "Estoril Praia", aliases: ["estoril"], lat: 38.7153, lon: -9.4061, city: "Estoril", country: "Portugal" },
+      { name: "Casa Pia", aliases: ["casa pia"], lat: 38.75, lon: -9.2, city: "Lisboa", country: "Portugal" },
+      { name: "Arouca", aliases: ["arouca"], lat: 40.9333, lon: -8.25, city: "Arouca", country: "Portugal" },
+      { name: "Vizela", aliases: ["vizela"], lat: 41.3833, lon: -8.3, city: "Vizela", country: "Portugal" },
+      { name: "Chaves", aliases: ["chaves", "gd chaves"], lat: 41.74, lon: -7.47, city: "Chaves", country: "Portugal" },
+      { name: "Farense", aliases: ["farense", "sc farense"], lat: 37.0222, lon: -7.9289, city: "Faro", country: "Portugal" },
+      { name: "Nacional", aliases: ["nacional madeira", "cd nacional"], lat: 32.6667, lon: -16.9167, city: "Funchal", country: "Portugal" },
+      { name: "Ajax", aliases: ["ajax amsterdam", "afc ajax"], lat: 52.3142, lon: 4.9419, city: "Ámsterdam", country: "Países Bajos" },
+      { name: "PSV Eindhoven", aliases: ["psv", "eindhoven", "psv eindhoven"], lat: 51.4417, lon: 5.4675, city: "Eindhoven", country: "Países Bajos" },
+      { name: "Feyenoord", aliases: ["feyenoord rotterdam", "feyenoord"], lat: 51.8939, lon: 4.5232, city: "Róterdam", country: "Países Bajos" },
+      { name: "AZ Alkmaar", aliases: ["az", "alkmaar", "az alkmaar"], lat: 52.6128, lon: 4.7419, city: "Alkmaar", country: "Países Bajos" },
+      { name: "FC Twente", aliases: ["twente", "fc twente"], lat: 52.2364, lon: 6.8375, city: "Enschede", country: "Países Bajos" },
+      { name: "FC Utrecht", aliases: ["utrecht", "fc utrecht"], lat: 52.0783, lon: 5.1461, city: "Utrecht", country: "Países Bajos" },
+      { name: "Vitesse", aliases: ["vitesse arnhem", "vitesse"], lat: 51.9644, lon: 5.9019, city: "Arnhem", country: "Países Bajos" },
+      { name: "Heerenveen", aliases: ["sc heerenveen", "heerenveen"], lat: 52.9589, lon: 5.9444, city: "Heerenveen", country: "Países Bajos" },
+      { name: "Groningen", aliases: ["fc groningen", "groningen"], lat: 53.2067, lon: 6.5914, city: "Groningen", country: "Países Bajos" },
+      { name: "Sparta Rotterdam", aliases: ["sparta", "sparta rotterdam"], lat: 51.92, lon: 4.4333, city: "Róterdam", country: "Países Bajos" },
+      { name: "NEC Nijmegen", aliases: ["nec", "nec nijmegen"], lat: 51.8222, lon: 5.8375, city: "Nimega", country: "Países Bajos" },
+      { name: "Go Ahead Eagles", aliases: ["go ahead eagles"], lat: 52.26, lon: 6.17, city: "Deventer", country: "Países Bajos" },
+      { name: "Fortuna Sittard", aliases: ["fortuna sittard"], lat: 50.9917, lon: 5.8431, city: "Sittard", country: "Países Bajos" },
+      { name: "Heracles Almelo", aliases: ["heracles", "heracles almelo"], lat: 52.34, lon: 6.65, city: "Almelo", country: "Países Bajos" },
+      { name: "PEC Zwolle", aliases: ["zwolle", "pec zwolle"], lat: 52.5167, lon: 6.0833, city: "Zwolle", country: "Países Bajos" },
+      { name: "RKC Waalwijk", aliases: ["rkc", "rkc waalwijk"], lat: 51.7, lon: 5.0667, city: "Waalwijk", country: "Países Bajos" },
+      { name: "Excelsior", aliases: ["excelsior rotterdam"], lat: 51.9167, lon: 4.5167, city: "Róterdam", country: "Países Bajos" },
+      { name: "Volendam", aliases: ["fc volendam", "volendam"], lat: 52.5, lon: 5.0667, city: "Volendam", country: "Países Bajos" },
+      { name: "Club Brugge", aliases: ["brugge", "club brugge", "bruges"], lat: 51.1934, lon: 3.1804, city: "Brujas", country: "Bélgica" },
+      { name: "RSC Anderlecht", aliases: ["anderlecht", "rsc anderlecht"], lat: 50.8342, lon: 4.2983, city: "Bruselas", country: "Bélgica" },
+      { name: "KRC Genk", aliases: ["genk", "krc genk"], lat: 50.9514, lon: 5.5417, city: "Genk", country: "Bélgica" },
+      { name: "Royal Antwerp", aliases: ["antwerp", "royal antwerp", "antwerp fc"], lat: 51.2264, lon: 4.4211, city: "Amberes", country: "Bélgica" },
+      { name: "Standard Liège", aliases: ["standard", "standard liege", "standard liège"], lat: 50.6097, lon: 5.5436, city: "Lieja", country: "Bélgica" },
+      { name: "KAA Gent", aliases: ["gent", "kaa gent", "ghent"], lat: 51.0172, lon: 3.7342, city: "Gante", country: "Bélgica" },
+      { name: "Union Saint-Gilloise", aliases: ["union sg", "union saint-gilloise"], lat: 50.8236, lon: 4.3289, city: "Bruselas", country: "Bélgica" },
+      { name: "Cercle Brugge", aliases: ["cercle brugge", "cercle"], lat: 51.1934, lon: 3.1804, city: "Brujas", country: "Bélgica" },
+      { name: "KV Mechelen", aliases: ["mechelen", "kv mechelen"], lat: 51.0267, lon: 4.4417, city: "Malinas", country: "Bélgica" },
+      { name: "OH Leuven", aliases: ["leuven", "oh leuven"], lat: 50.8681, lon: 4.7019, city: "Lovaina", country: "Bélgica" },
+      { name: "Sint-Truiden", aliases: ["sint-truiden", "stvv"], lat: 50.8133, lon: 5.165, city: "Sint-Truiden", country: "Bélgica" },
+      { name: "Charleroi", aliases: ["sporting charleroi", "charleroi"], lat: 50.4317, lon: 4.4536, city: "Charleroi", country: "Bélgica" },
+      { name: "Westerlo", aliases: ["kvc westerlo", "westerlo"], lat: 51.1333, lon: 4.9167, city: "Westerlo", country: "Bélgica" },
+      { name: "Kortrijk", aliases: ["kv kortrijk", "kortrijk"], lat: 50.83, lon: 3.25, city: "Courtrai", country: "Bélgica" },
+      { name: "Eupen", aliases: ["kas eupen", "eupen"], lat: 50.6333, lon: 6.0333, city: "Eupen", country: "Bélgica" },
+      { name: "Galatasaray", aliases: ["galatasaray sk", "gala"], lat: 41.0736, lon: 28.7658, city: "Estambul", country: "Turquía" },
+      { name: "Fenerbahçe", aliases: ["fenerbahce", "fenerbahçe", "fener"], lat: 40.9875, lon: 29.0369, city: "Estambul", country: "Turquía" },
+      { name: "Beşiktaş", aliases: ["besiktas", "beşiktaş", "bjk"], lat: 41.0392, lon: 28.9944, city: "Estambul", country: "Turquía" },
+      { name: "Trabzonspor", aliases: ["trabzonspor", "trabzon"], lat: 41.0036, lon: 39.7161, city: "Trebisonda", country: "Turquía" },
+      { name: "İstanbul Başakşehir", aliases: ["basaksehir", "başakşehir", "istanbul basaksehir"], lat: 41.1225, lon: 28.8089, city: "Estambul", country: "Turquía" },
+      { name: "Adana Demirspor", aliases: ["adana demirspor", "adana"], lat: 36.9914, lon: 35.3308, city: "Adana", country: "Turquía" },
+      { name: "Antalyaspor", aliases: ["antalyaspor", "antalya"], lat: 36.8889, lon: 30.6667, city: "Antalya", country: "Turquía" },
+      { name: "Konyaspor", aliases: ["konyaspor", "konya"], lat: 37.8714, lon: 32.4847, city: "Konya", country: "Turquía" },
+      { name: "Sivasspor", aliases: ["sivasspor", "sivas"], lat: 39.75, lon: 37.0167, city: "Sivas", country: "Turquía" },
+      { name: "Alanyaspor", aliases: ["alanyaspor", "alanya"], lat: 36.5436, lon: 32.0, city: "Alanya", country: "Turquía" },
+      { name: "Kasımpaşa", aliases: ["kasimpasa", "kasımpaşa"], lat: 41.0333, lon: 28.9667, city: "Estambul", country: "Turquía" },
+      { name: "Gaziantep FK", aliases: ["gaziantep", "gaziantep fk"], lat: 37.0667, lon: 37.3833, city: "Gaziantep", country: "Turquía" },
+      { name: "Rizespor", aliases: ["rizespor", "rize"], lat: 41.02, lon: 40.52, city: "Rize", country: "Turquía" },
+      { name: "Samsunspor", aliases: ["samsunspor", "samsun"], lat: 41.2867, lon: 36.33, city: "Samsun", country: "Turquía" },
+      { name: "Göztepe", aliases: ["goztepe", "göztepe"], lat: 38.4, lon: 27.1, city: "Esmirna", country: "Turquía" },
+      { name: "Kayserispor", aliases: ["kayserispor", "kayseri"], lat: 38.7225, lon: 35.4875, city: "Kayseri", country: "Turquía" },
+      { name: "Celtic", aliases: ["celtic fc", "celtic glasgow"], lat: 55.8497, lon: -4.2056, city: "Glasgow", country: "Escocia" },
+      { name: "Rangers", aliases: ["rangers fc", "glasgow rangers"], lat: 55.8532, lon: -4.3092, city: "Glasgow", country: "Escocia" },
+      { name: "Aberdeen", aliases: ["aberdeen fc"], lat: 57.1594, lon: -2.0889, city: "Aberdeen", country: "Escocia" },
+      { name: "Heart of Midlothian", aliases: ["hearts", "heart of midlothian"], lat: 55.9392, lon: -3.1725, city: "Edimburgo", country: "Escocia" },
+      { name: "Hibernian", aliases: ["hibs", "hibernian"], lat: 55.9617, lon: -3.1656, city: "Edimburgo", country: "Escocia" },
+      { name: "Motherwell", aliases: ["motherwell fc"], lat: 55.78, lon: -3.98, city: "Motherwell", country: "Escocia" },
+      { name: "Kilmarnock", aliases: ["kilmarnock fc"], lat: 55.6042, lon: -4.5081, city: "Kilmarnock", country: "Escocia" },
+      { name: "St. Mirren", aliases: ["st mirren", "st. mirren"], lat: 55.8506, lon: -4.4439, city: "Paisley", country: "Escocia" },
+      { name: "Dundee United", aliases: ["dundee united"], lat: 56.4747, lon: -2.969, city: "Dundee", country: "Escocia" },
+      { name: "Dundee", aliases: ["dundee fc"], lat: 56.4753, lon: -2.9732, city: "Dundee", country: "Escocia" },
+      { name: "St. Johnstone", aliases: ["st johnstone", "st. johnstone"], lat: 56.4097, lon: -3.4769, city: "Perth", country: "Escocia" },
+      { name: "Ross County", aliases: ["ross county"], lat: 57.5959, lon: -4.4189, city: "Dingwall", country: "Escocia" },
+      { name: "Livingston", aliases: ["livingston fc"], lat: 55.8862, lon: -3.5229, city: "Livingston", country: "Escocia" },
+      { name: "Red Bull Salzburg", aliases: ["salzburg", "rb salzburg", "red bull salzburg"], lat: 47.8153, lon: 13.0108, city: "Salzburgo", country: "Austria" },
+      { name: "Rapid Wien", aliases: ["rapid", "rapid vienna", "rapid wien"], lat: 48.1975, lon: 16.2653, city: "Viena", country: "Austria" },
+      { name: "Austria Wien", aliases: ["austria vienna", "austria wien", "fk austria"], lat: 48.1622, lon: 16.3844, city: "Viena", country: "Austria" },
+      { name: "Sturm Graz", aliases: ["sturm graz", "sturm"], lat: 47.0436, lon: 15.4547, city: "Graz", country: "Austria" },
+      { name: "LASK", aliases: ["lask linz", "lask"], lat: 48.2936, lon: 14.2764, city: "Linz", country: "Austria" },
+      { name: "Wolfsberger AC", aliases: ["wolfsberg", "wolfsberger ac"], lat: 46.84, lon: 14.84, city: "Wolfsberg", country: "Austria" },
+      { name: "Austria Klagenfurt", aliases: ["klagenfurt", "austria klagenfurt"], lat: 46.62, lon: 14.31, city: "Klagenfurt", country: "Austria" },
+      { name: "Hartberg", aliases: ["tsv hartberg", "hartberg"], lat: 47.28, lon: 15.97, city: "Hartberg", country: "Austria" },
+      { name: "Rheindorf Altach", aliases: ["altach", "scr altach"], lat: 47.35, lon: 9.65, city: "Altach", country: "Austria" },
+      { name: "Blau-Weiß Linz", aliases: ["blau-weiss linz", "bw linz"], lat: 48.3, lon: 14.29, city: "Linz", country: "Austria" },
+      { name: "Young Boys", aliases: ["bsc young boys", "young boys bern"], lat: 46.9636, lon: 7.4647, city: "Berna", country: "Suiza" },
+      { name: "FC Basel", aliases: ["basel", "fc basel"], lat: 47.5417, lon: 7.6203, city: "Basilea", country: "Suiza" },
+      { name: "FC Zürich", aliases: ["zurich", "zürich", "fc zurich"], lat: 47.3828, lon: 8.5036, city: "Zúrich", country: "Suiza" },
+      { name: "Servette", aliases: ["servette fc", "servette"], lat: 46.2089, lon: 6.13, city: "Ginebra", country: "Suiza" },
+      { name: "Lugano", aliases: ["fc lugano", "lugano"], lat: 46.01, lon: 8.96, city: "Lugano", country: "Suiza" },
+      { name: "St. Gallen", aliases: ["st gallen", "fc st. gallen"], lat: 47.4083, lon: 9.31, city: "San Galo", country: "Suiza" },
+      { name: "Luzern", aliases: ["fc luzern", "luzern"], lat: 47.0333, lon: 8.3056, city: "Lucerna", country: "Suiza" },
+      { name: "Grasshopper", aliases: ["grasshopper club", "grasshoppers"], lat: 47.3828, lon: 8.5036, city: "Zúrich", country: "Suiza" },
+      { name: "Lausanne-Sport", aliases: ["lausanne", "fc lausanne-sport"], lat: 46.5333, lon: 6.6167, city: "Lausana", country: "Suiza" },
+      { name: "Sion", aliases: ["fc sion", "sion"], lat: 46.2333, lon: 7.3667, city: "Sion", country: "Suiza" },
+      { name: "Winterthur", aliases: ["fc winterthur", "winterthur"], lat: 47.5, lon: 8.7333, city: "Winterthur", country: "Suiza" },
+      { name: "Yverdon-Sport", aliases: ["yverdon", "yverdon-sport"], lat: 46.7783, lon: 6.6408, city: "Yverdon-les-Bains", country: "Suiza" },
+      { name: "Olympiacos", aliases: ["olympiakos", "olympiacos piraeus"], lat: 37.9461, lon: 23.6647, city: "El Pireo", country: "Grecia" },
+      { name: "Panathinaikos", aliases: ["panathinaikos", "pao"], lat: 37.9875, lon: 23.7536, city: "Atenas", country: "Grecia" },
+      { name: "AEK Athens", aliases: ["aek", "aek athens", "aek atenas"], lat: 38.0361, lon: 23.7875, city: "Atenas", country: "Grecia" },
+      { name: "PAOK", aliases: ["paok thessaloniki", "paok"], lat: 40.6136, lon: 22.9722, city: "Salónica", country: "Grecia" },
+      { name: "Aris Thessaloniki", aliases: ["aris", "aris thessaloniki"], lat: 40.6267, lon: 22.96, city: "Salónica", country: "Grecia" },
+      { name: "Panetolikos", aliases: ["panetolikos"], lat: 38.6167, lon: 21.4, city: "Agrinio", country: "Grecia" },
+      { name: "Asteras Tripolis", aliases: ["asteras tripolis", "asteras"], lat: 37.5083, lon: 22.3733, city: "Trípoli", country: "Grecia" },
+      { name: "Atromitos", aliases: ["atromitos athens", "atromitos"], lat: 38.0, lon: 23.7, city: "Atenas", country: "Grecia" },
+      { name: "OFI Crete", aliases: ["ofi", "ofi crete"], lat: 35.3367, lon: 25.1067, city: "Heraclión", country: "Grecia" },
+      { name: "Volos NFC", aliases: ["volos", "volos nfc"], lat: 39.3667, lon: 22.95, city: "Volos", country: "Grecia" },
+      { name: "Dinamo Zagreb", aliases: ["dinamo", "dinamo zagreb", "gnk dinamo"], lat: 45.8186, lon: 16.0178, city: "Zagreb", country: "Croacia" },
+      { name: "Hajduk Split", aliases: ["hajduk", "hajduk split"], lat: 43.5197, lon: 16.4319, city: "Split", country: "Croacia" },
+      { name: "Rijeka", aliases: ["hnk rijeka", "rijeka"], lat: 45.3403, lon: 14.4244, city: "Rijeka", country: "Croacia" },
+      { name: "Osijek", aliases: ["nk osijek", "osijek"], lat: 45.545, lon: 18.695, city: "Osijek", country: "Croacia" },
+      { name: "Lokomotiva Zagreb", aliases: ["lokomotiva", "nk lokomotiva"], lat: 45.8, lon: 16.0, city: "Zagreb", country: "Croacia" },
+      { name: "Slaven Belupo", aliases: ["slaven belupo", "slaven"], lat: 46.1625, lon: 16.8333, city: "Koprivnica", country: "Croacia" },
+      { name: "Istra 1961", aliases: ["istra", "istra 1961"], lat: 44.87, lon: 13.85, city: "Pula", country: "Croacia" },
+      { name: "Gorica", aliases: ["hnk gorica", "gorica"], lat: 45.7, lon: 16.05, city: "Velika Gorica", country: "Croacia" },
+      { name: "Red Star Belgrade", aliases: ["estrella roja", "red star", "crvena zvezda", "estrella roja de belgrado"], lat: 44.7833, lon: 20.4647, city: "Belgrado", country: "Serbia" },
+      { name: "Partizan", aliases: ["partizan belgrade", "fk partizan", "partizan"], lat: 44.7886, lon: 20.4592, city: "Belgrado", country: "Serbia" },
+      { name: "Vojvodina", aliases: ["fk vojvodina", "vojvodina"], lat: 45.2467, lon: 19.8417, city: "Novi Sad", country: "Serbia" },
+      { name: "Čukarički", aliases: ["cukaricki", "čukarički"], lat: 44.75, lon: 20.42, city: "Belgrado", country: "Serbia" },
+      { name: "TSC Bačka Topola", aliases: ["tsc", "bačka topola", "tsc backa topola"], lat: 45.8167, lon: 19.6333, city: "Bačka Topola", country: "Serbia" },
+      { name: "Radnički Niš", aliases: ["radnicki nis", "radnički niš"], lat: 43.32, lon: 21.9, city: "Niš", country: "Serbia" },
+      { name: "Shakhtar Donetsk", aliases: ["shakhtar", "shakhtar donetsk"], lat: 48.0167, lon: 37.8, city: "Donetsk", country: "Ucrania" },
+      { name: "Dynamo Kyiv", aliases: ["dynamo kiev", "dynamo kyiv", "dinamo kiev"], lat: 50.45, lon: 30.5217, city: "Kiev", country: "Ucrania" },
+      { name: "Dnipro-1", aliases: ["dnipro", "sc dnipro-1"], lat: 48.45, lon: 34.9833, city: "Dnipró", country: "Ucrania" },
+      { name: "Zorya Luhansk", aliases: ["zorya", "zorya luhansk"], lat: 48.57, lon: 39.3, city: "Lugansk", country: "Ucrania" },
+      { name: "Vorskla Poltava", aliases: ["vorskla", "vorskla poltava"], lat: 49.5883, lon: 34.5514, city: "Poltava", country: "Ucrania" },
+      { name: "Kolos Kovalivka", aliases: ["kolos", "kolos kovalivka"], lat: 50.3, lon: 30.0, city: "Kovalivka", country: "Ucrania" },
+      { name: "Metalist 1925", aliases: ["metalist", "metalist 1925"], lat: 49.98, lon: 36.26, city: "Járkov", country: "Ucrania" },
+      { name: "Kryvbas", aliases: ["kryvbas kryvyi rih", "kryvbas"], lat: 47.91, lon: 33.39, city: "Krivói Rog", country: "Ucrania" },
+      { name: "Polissya Zhytomyr", aliases: ["polissya", "polissya zhytomyr"], lat: 50.25, lon: 28.65, city: "Zhytómyr", country: "Ucrania" },
+      { name: "Zenit Saint Petersburg", aliases: ["zenit", "zenit san petersburgo", "zenit petersburg"], lat: 59.9728, lon: 30.2214, city: "San Petersburgo", country: "Rusia" },
+      { name: "Spartak Moscow", aliases: ["spartak", "spartak moscow", "spartak moscu"], lat: 55.8178, lon: 37.4406, city: "Moscú", country: "Rusia" },
+      { name: "CSKA Moscow", aliases: ["cska", "cska moscow", "cska moscu"], lat: 55.7917, lon: 37.5167, city: "Moscú", country: "Rusia" },
+      { name: "Lokomotiv Moscow", aliases: ["lokomotiv", "lokomotiv moscow"], lat: 55.8036, lon: 37.7411, city: "Moscú", country: "Rusia" },
+      { name: "Krasnodar", aliases: ["fc krasnodar", "krasnodar"], lat: 45.0445, lon: 38.976, city: "Krasnodar", country: "Rusia" },
+      { name: "Rostov", aliases: ["fc rostov", "rostov"], lat: 47.2357, lon: 39.7015, city: "Rostov del Don", country: "Rusia" },
+      { name: "Dynamo Moscow", aliases: ["dynamo moscow", "dinamo moscow"], lat: 55.7914, lon: 37.5597, city: "Moscú", country: "Rusia" },
+      { name: "Rubin Kazan", aliases: ["rubin", "rubin kazan"], lat: 55.8208, lon: 49.1608, city: "Kazán", country: "Rusia" },
+      { name: "Sochi", aliases: ["pfc sochi", "sochi"], lat: 43.6028, lon: 39.7342, city: "Sochi", country: "Rusia" },
+      { name: "Akhmat Grozny", aliases: ["akhmat", "akhmat grozny"], lat: 43.3181, lon: 45.6886, city: "Grozni", country: "Rusia" },
+      { name: "Legia Warsaw", aliases: ["legia", "legia warsaw", "legia varsovia"], lat: 52.2206, lon: 20.9728, city: "Varsovia", country: "Polonia" },
+      { name: "Lech Poznań", aliases: ["lech", "lech poznan", "lech poznań"], lat: 52.3975, lon: 16.8583, city: "Poznań", country: "Polonia" },
+      { name: "Wisła Kraków", aliases: ["wisla", "wisła kraków", "wisla krakow"], lat: 50.0536, lon: 19.9358, city: "Cracovia", country: "Polonia" },
+      { name: "Raków Częstochowa", aliases: ["rakow", "raków częstochowa"], lat: 50.8, lon: 19.1167, city: "Częstochowa", country: "Polonia" },
+      { name: "Pogoń Szczecin", aliases: ["pogon", "pogoń szczecin"], lat: 53.43, lon: 14.55, city: "Szczecin", country: "Polonia" },
+      { name: "Śląsk Wrocław", aliases: ["slask", "śląsk wrocław"], lat: 51.1, lon: 17.0333, city: "Breslavia", country: "Polonia" },
+      { name: "Jagiellonia Białystok", aliases: ["jagiellonia", "jagiellonia białystok"], lat: 53.1333, lon: 23.1667, city: "Białystok", country: "Polonia" },
+      { name: "Cracovia", aliases: ["cracovia kraków", "cracovia"], lat: 50.05, lon: 19.9167, city: "Cracovia", country: "Polonia" },
+      { name: "Górnik Zabrze", aliases: ["gornik", "górnik zabrze"], lat: 50.3167, lon: 18.7833, city: "Zabrze", country: "Polonia" },
+      { name: "Piast Gliwice", aliases: ["piast", "piast gliwice"], lat: 50.3, lon: 18.6667, city: "Gliwice", country: "Polonia" },
+      { name: "Zagłębie Lubin", aliases: ["zaglebie", "zagłębie lubin"], lat: 51.4, lon: 16.2, city: "Lubin", country: "Polonia" },
+      { name: "Widzew Łódź", aliases: ["widzew", "widzew łódź"], lat: 51.75, lon: 19.4667, city: "Łódź", country: "Polonia" },
+      { name: "Sparta Prague", aliases: ["sparta", "sparta prague", "sparta praha"], lat: 50.0997, lon: 14.4164, city: "Praga", country: "Chequia" },
+      { name: "Slavia Prague", aliases: ["slavia", "slavia prague", "slavia praha"], lat: 50.0681, lon: 14.4714, city: "Praga", country: "Chequia" },
+      { name: "Viktoria Plzeň", aliases: ["plzen", "viktoria plzen", "viktoria plzeň"], lat: 49.7225, lon: 13.3736, city: "Pilsen", country: "Chequia" },
+      { name: "Baník Ostrava", aliases: ["banik", "baník ostrava"], lat: 49.8333, lon: 18.2833, city: "Ostrava", country: "Chequia" },
+      { name: "Slovan Liberec", aliases: ["liberec", "slovan liberec"], lat: 50.7667, lon: 15.05, city: "Liberec", country: "Chequia" },
+      { name: "Sigma Olomouc", aliases: ["sigma", "sigma olomouc"], lat: 49.595, lon: 17.25, city: "Olomouc", country: "Chequia" },
+      { name: "Bohemians 1905", aliases: ["bohemians", "bohemians 1905"], lat: 50.0667, lon: 14.45, city: "Praga", country: "Chequia" },
+      { name: "Mladá Boleslav", aliases: ["mlada boleslav", "mladá boleslav"], lat: 50.4114, lon: 14.9036, city: "Mladá Boleslav", country: "Chequia" },
+      { name: "Hradec Králové", aliases: ["hradec", "hradec králové"], lat: 50.21, lon: 15.83, city: "Hradec Králové", country: "Chequia" },
+      { name: "FK Jablonec", aliases: ["jablonec", "fk jablonec"], lat: 50.7244, lon: 15.1711, city: "Jablonec nad Nisou", country: "Chequia" },
+      { name: "FC Copenhagen", aliases: ["copenhagen", "fc københavn", "fck", "copenhague"], lat: 55.7028, lon: 12.5722, city: "Copenhague", country: "Dinamarca" },
+      { name: "Brøndby IF", aliases: ["brondby", "brøndby"], lat: 55.6486, lon: 12.4186, city: "Brøndby", country: "Dinamarca" },
+      { name: "FC Midtjylland", aliases: ["midtjylland", "fc midtjylland"], lat: 56.1169, lon: 8.9514, city: "Herning", country: "Dinamarca" },
+      { name: "Aarhus GF", aliases: ["aarhus", "agf", "aarhus gf"], lat: 56.1319, lon: 10.1969, city: "Aarhus", country: "Dinamarca" },
+      { name: "Nordsjælland", aliases: ["nordsjaelland", "fc nordsjælland"], lat: 55.8167, lon: 12.3667, city: "Farum", country: "Dinamarca" },
+      { name: "Silkeborg IF", aliases: ["silkeborg", "silkeborg if"], lat: 56.15, lon: 9.55, city: "Silkeborg", country: "Dinamarca" },
+      { name: "Randers FC", aliases: ["randers", "randers fc"], lat: 56.46, lon: 10.0367, city: "Randers", country: "Dinamarca" },
+      { name: "Viborg FF", aliases: ["viborg", "viborg ff"], lat: 56.45, lon: 9.4, city: "Viborg", country: "Dinamarca" },
+      { name: "Odense BK", aliases: ["odense", "ob", "odense bk"], lat: 55.3972, lon: 10.3833, city: "Odense", country: "Dinamarca" },
+      { name: "Aalborg BK", aliases: ["aalborg", "aab", "aalborg bk"], lat: 57.05, lon: 9.9167, city: "Aalborg", country: "Dinamarca" },
+      { name: "Malmö FF", aliases: ["malmo", "malmö", "malmö ff"], lat: 55.5836, lon: 12.9881, city: "Malmö", country: "Suecia" },
+      { name: "AIK", aliases: ["aik stockholm", "aik"], lat: 59.3456, lon: 18.0803, city: "Estocolmo", country: "Suecia" },
+      { name: "IFK Göteborg", aliases: ["goteborg", "göteborg", "ifk goteborg"], lat: 57.7358, lon: 11.9806, city: "Gotemburgo", country: "Suecia" },
+      { name: "Djurgårdens IF", aliases: ["djurgarden", "djurgårdens if"], lat: 59.34, lon: 18.08, city: "Estocolmo", country: "Suecia" },
+      { name: "Hammarby IF", aliases: ["hammarby", "hammarby if"], lat: 59.295, lon: 18.085, city: "Estocolmo", country: "Suecia" },
+      { name: "IF Elfsborg", aliases: ["elfsborg", "if elfsborg"], lat: 57.7342, lon: 12.9417, city: "Borås", country: "Suecia" },
+      { name: "BK Häcken", aliases: ["hacken", "bk häcken"], lat: 57.7, lon: 11.95, city: "Gotemburgo", country: "Suecia" },
+      { name: "Kalmar FF", aliases: ["kalmar", "kalmar ff"], lat: 56.6667, lon: 16.3667, city: "Kalmar", country: "Suecia" },
+      { name: "IFK Norrköping", aliases: ["norrkoping", "ifk norrköping"], lat: 58.5833, lon: 16.1833, city: "Norrköping", country: "Suecia" },
+      { name: "Helsingborgs IF", aliases: ["helsingborg", "helsingborgs if"], lat: 56.05, lon: 12.7, city: "Helsingborg", country: "Suecia" },
+      { name: "Rosenborg BK", aliases: ["rosenborg", "rosenborg bk"], lat: 63.4122, lon: 10.4047, city: "Trondheim", country: "Noruega" },
+      { name: "Molde FK", aliases: ["molde", "molde fk"], lat: 62.7336, lon: 7.1486, city: "Molde", country: "Noruega" },
+      { name: "Bodø/Glimt", aliases: ["bodo", "bodø", "bodo glimt", "bodø/glimt"], lat: 67.2769, lon: 14.4261, city: "Bodø", country: "Noruega" },
+      { name: "Viking FK", aliases: ["viking", "viking stavanger"], lat: 58.9642, lon: 5.7336, city: "Stavanger", country: "Noruega" },
+      { name: "Brann", aliases: ["sk brann", "brann bergen"], lat: 60.3914, lon: 5.3222, city: "Bergen", country: "Noruega" },
+      { name: "Lillestrøm SK", aliases: ["lillestrom", "lillestrøm"], lat: 59.95, lon: 11.0833, city: "Lillestrøm", country: "Noruega" },
+      { name: "Vålerenga", aliases: ["valerenga", "vålerenga"], lat: 59.9167, lon: 10.8, city: "Oslo", country: "Noruega" },
+      { name: "Odd", aliases: ["odds bk", "odd grenland"], lat: 59.15, lon: 9.65, city: "Skien", country: "Noruega" },
+      { name: "Sarpsborg 08", aliases: ["sarpsborg", "sarpsborg 08"], lat: 59.2833, lon: 11.1167, city: "Sarpsborg", country: "Noruega" },
+      { name: "Tromsø IL", aliases: ["tromso", "tromsø"], lat: 69.65, lon: 18.95, city: "Tromsø", country: "Noruega" },
+      { name: "FCSB", aliases: ["steaua", "fcsb", "steaua bucarest"], lat: 44.4378, lon: 26.1525, city: "Bucarest", country: "Rumanía" },
+      { name: "CFR Cluj", aliases: ["cfr", "cfr cluj"], lat: 46.7675, lon: 23.57, city: "Cluj-Napoca", country: "Rumanía" },
+      { name: "Universitatea Craiova", aliases: ["craiova", "universitatea craiova"], lat: 44.3194, lon: 23.7964, city: "Craiova", country: "Rumanía" },
+      { name: "Rapid București", aliases: ["rapid bucarest", "rapid bucurești"], lat: 44.45, lon: 26.1, city: "Bucarest", country: "Rumanía" },
+      { name: "Dinamo București", aliases: ["dinamo bucarest", "dinamo bucurești"], lat: 44.45, lon: 26.15, city: "Bucarest", country: "Rumanía" },
+      { name: "Sepsi OSK", aliases: ["sepsi", "sepsi osk"], lat: 45.8667, lon: 25.7833, city: "Sfântu Gheorghe", country: "Rumanía" },
+      { name: "Farul Constanța", aliases: ["farul", "farul constanța"], lat: 44.1833, lon: 28.65, city: "Constanța", country: "Rumanía" },
+      { name: "UTA Arad", aliases: ["uta", "uta arad"], lat: 46.1667, lon: 21.3167, city: "Arad", country: "Rumanía" },
+      { name: "Ferencváros", aliases: ["ferencvaros", "ferencváros", "fradi"], lat: 47.4756, lon: 19.0956, city: "Budapest", country: "Hungría" },
+      { name: "Puskás Akadémia", aliases: ["puskas", "puskás akadémia"], lat: 47.6, lon: 18.9, city: "Felcsút", country: "Hungría" },
+      { name: "Fehérvár", aliases: ["fehervar", "fehérvár", "videoton"], lat: 47.1833, lon: 18.4167, city: "Székesfehérvár", country: "Hungría" },
+      { name: "Debrecen", aliases: ["debreceni vsc", "debrecen"], lat: 47.53, lon: 21.64, city: "Debrecen", country: "Hungría" },
+      { name: "Újpest", aliases: ["ujpest", "újpest"], lat: 47.55, lon: 19.0833, city: "Budapest", country: "Hungría" },
+      { name: "MTK Budapest", aliases: ["mtk", "mtk budapest"], lat: 47.5, lon: 19.0833, city: "Budapest", country: "Hungría" },
+      { name: "Kisvárda", aliases: ["kisvarda", "kisvárda"], lat: 48.2167, lon: 22.0833, city: "Kisvárda", country: "Hungría" },
+      { name: "Paksi FC", aliases: ["paks", "paksi fc"], lat: 46.6167, lon: 18.85, city: "Paks", country: "Hungría" },
+      { name: "Maccabi Tel Aviv", aliases: ["maccabi", "maccabi tel aviv"], lat: 32.1, lon: 34.825, city: "Tel Aviv", country: "Israel" },
+      { name: "Maccabi Haifa", aliases: ["maccabi haifa"], lat: 32.7833, lon: 34.965, city: "Haifa", country: "Israel" },
+      { name: "Hapoel Be'er Sheva", aliases: ["hapoel beer sheva", "hapoel be'er sheva"], lat: 31.25, lon: 34.8, city: "Beerseba", country: "Israel" },
+      { name: "Hapoel Tel Aviv", aliases: ["hapoel tel aviv"], lat: 32.07, lon: 34.78, city: "Tel Aviv", country: "Israel" },
+      { name: "Beitar Jerusalem", aliases: ["beitar", "beitar jerusalem"], lat: 31.75, lon: 35.2, city: "Jerusalén", country: "Israel" },
+      { name: "Maccabi Netanya", aliases: ["maccabi netanya"], lat: 32.3333, lon: 34.85, city: "Netanya", country: "Israel" },
+      { name: "APOEL", aliases: ["apoel nicosia", "apoel"], lat: 35.145, lon: 33.3142, city: "Nicosia", country: "Chipre" },
+      { name: "AEK Larnaca", aliases: ["aek larnaca"], lat: 34.9167, lon: 33.6333, city: "Lárnaca", country: "Chipre" },
+      { name: "Apollon Limassol", aliases: ["apollon", "apollon limassol"], lat: 34.7, lon: 33.0333, city: "Limassol", country: "Chipre" },
+      { name: "Omonia Nicosia", aliases: ["omonia", "omonia nicosia"], lat: 35.15, lon: 33.35, city: "Nicosia", country: "Chipre" },
+      { name: "Anorthosis Famagusta", aliases: ["anorthosis", "anorthosis famagusta"], lat: 35.1167, lon: 33.95, city: "Famagusta", country: "Chipre" },
+      { name: "AEL Limassol", aliases: ["ael limassol", "ael"], lat: 34.7, lon: 33.0333, city: "Limassol", country: "Chipre" },
+      { name: "Aris Limassol", aliases: ["aris limassol"], lat: 34.7, lon: 33.0333, city: "Limassol", country: "Chipre" },
+      { name: "Pafos FC", aliases: ["pafos", "pafos fc"], lat: 34.7667, lon: 32.4167, city: "Pafos", country: "Chipre" },
+      { name: "Ludogorets Razgrad", aliases: ["ludogorets", "ludogorets razgrad"], lat: 43.5333, lon: 26.5167, city: "Razgrad", country: "Bulgaria" },
+      { name: "CSKA Sofia", aliases: ["cska sofia", "cska sofía"], lat: 42.6833, lon: 23.3333, city: "Sofía", country: "Bulgaria" },
+      { name: "Levski Sofia", aliases: ["levski", "levski sofia"], lat: 42.7, lon: 23.3333, city: "Sofía", country: "Bulgaria" },
+      { name: "Botev Plovdiv", aliases: ["botev", "botev plovdiv"], lat: 42.15, lon: 24.75, city: "Plovdiv", country: "Bulgaria" },
+      { name: "Lokomotiv Plovdiv", aliases: ["lokomotiv plovdiv"], lat: 42.1333, lon: 24.75, city: "Plovdiv", country: "Bulgaria" },
+      { name: "Cherno More", aliases: ["cherno more", "cherno more varna"], lat: 43.2, lon: 27.9167, city: "Varna", country: "Bulgaria" },
+      { name: "Slavia Sofia", aliases: ["slavia sofia"], lat: 42.6833, lon: 23.3, city: "Sofía", country: "Bulgaria" },
+      { name: "Arda Kardzhali", aliases: ["arda", "arda kardzhali"], lat: 41.65, lon: 25.3667, city: "Kardzhali", country: "Bulgaria" },
+      { name: "ŠK Slovan Bratislava", aliases: ["slovan", "slovan bratislava"], lat: 48.1639, lon: 17.1417, city: "Bratislava", country: "Eslovaquia" },
+      { name: "MŠK Žilina", aliases: ["zilina", "msk zilina", "mšk žilina"], lat: 49.22, lon: 18.74, city: "Žilina", country: "Eslovaquia" },
+      { name: "DAC Dunajská Streda", aliases: ["dac", "dunajska streda"], lat: 47.9833, lon: 17.6167, city: "Dunajská Streda", country: "Eslovaquia" },
+      { name: "Spartak Trnava", aliases: ["spartak trnava"], lat: 48.3775, lon: 17.5883, city: "Trnava", country: "Eslovaquia" },
+      { name: "Ružomberok", aliases: ["ruzomberok", "mfk ružomberok"], lat: 49.0833, lon: 19.3, city: "Ružomberok", country: "Eslovaquia" },
+      { name: "NK Maribor", aliases: ["maribor", "nk maribor"], lat: 46.5625, lon: 15.6403, city: "Maribor", country: "Eslovenia" },
+      { name: "NK Olimpija Ljubljana", aliases: ["olimpija", "olimpija ljubljana"], lat: 46.08, lon: 14.52, city: "Liubliana", country: "Eslovenia" },
+      { name: "NK Celje", aliases: ["celje", "nk celje"], lat: 46.23, lon: 15.26, city: "Celje", country: "Eslovenia" },
+      { name: "NK Domžale", aliases: ["domzale", "nk domžale"], lat: 46.1333, lon: 14.6, city: "Domžale", country: "Eslovenia" },
+      { name: "NŠ Mura", aliases: ["mura", "ns mura"], lat: 46.65, lon: 16.1667, city: "Murska Sobota", country: "Eslovenia" },
+      { name: "FK Sarajevo", aliases: ["sarajevo", "fk sarajevo"], lat: 43.8511, lon: 18.3875, city: "Sarajevo", country: "Bosnia y Herzegovina" },
+      { name: "HŠK Zrinjski", aliases: ["zrinjski", "hsk zrinjski"], lat: 43.34, lon: 17.81, city: "Mostar", country: "Bosnia y Herzegovina" },
+      { name: "FK Željezničar", aliases: ["zeljeznicar", "željezničar"], lat: 43.85, lon: 18.4, city: "Sarajevo", country: "Bosnia y Herzegovina" },
+      { name: "FK Borac Banja Luka", aliases: ["borac", "borac banja luka"], lat: 44.77, lon: 17.19, city: "Banja Luka", country: "Bosnia y Herzegovina" },
+      { name: "NK Široki Brijeg", aliases: ["siroki brijeg", "široki brijeg"], lat: 43.3833, lon: 17.6, city: "Široki Brijeg", country: "Bosnia y Herzegovina" },
+      { name: "FK Vardar", aliases: ["vardar", "fk vardar"], lat: 41.9965, lon: 21.4316, city: "Skopje", country: "Macedonia del Norte" },
+      { name: "KF Shkëndija", aliases: ["shkendija", "shkëndija"], lat: 41.95, lon: 20.9167, city: "Tetovo", country: "Macedonia del Norte" },
+      { name: "FK Rabotnički", aliases: ["rabotnicki", "rabotnički"], lat: 41.9833, lon: 21.4333, city: "Skopje", country: "Macedonia del Norte" },
+      { name: "KF Shkupi", aliases: ["shkupi"], lat: 42.0, lon: 21.45, city: "Skopje", country: "Macedonia del Norte" },
+      { name: "KF Tirana", aliases: ["tirana", "kf tirana"], lat: 41.3183, lon: 19.8214, city: "Tirana", country: "Albania" },
+      { name: "FK Partizani", aliases: ["partizani", "partizani tirana"], lat: 41.32, lon: 19.82, city: "Tirana", country: "Albania" },
+      { name: "KF Vllaznia", aliases: ["vllaznia", "vllaznia shkodër"], lat: 42.0667, lon: 19.5167, city: "Shkodër", country: "Albania" },
+      { name: "KF Egnatia", aliases: ["egnatia"], lat: 41.6833, lon: 19.7167, city: "Rrogozhinë", country: "Albania" },
+      { name: "KF Teuta", aliases: ["teuta", "teuta durrës"], lat: 41.3167, lon: 19.45, city: "Durrës", country: "Albania" },
+      { name: "Dinamo Tbilisi", aliases: ["dinamo tbilisi", "dinamo tiflis"], lat: 41.7228, lon: 44.7897, city: "Tiflis", country: "Georgia" },
+      { name: "Dinamo Batumi", aliases: ["dinamo batumi"], lat: 41.6167, lon: 41.6333, city: "Batumi", country: "Georgia" },
+      { name: "Saburtalo", aliases: ["saburtalo tbilisi"], lat: 41.72, lon: 44.78, city: "Tiflis", country: "Georgia" },
+      { name: "Torpedo Kutaisi", aliases: ["torpedo kutaisi"], lat: 42.2667, lon: 42.7, city: "Kutaisi", country: "Georgia" },
+      { name: "Qarabağ FK", aliases: ["qarabag", "qarabağ", "karabakh"], lat: 40.37, lon: 49.85, city: "Bakú", country: "Azerbaiyán" },
+      { name: "Neftçi PFK", aliases: ["neftci", "neftçi"], lat: 40.37, lon: 49.85, city: "Bakú", country: "Azerbaiyán" },
+      { name: "Sabah FK", aliases: ["sabah", "sabah baku"], lat: 40.4, lon: 49.85, city: "Bakú", country: "Azerbaiyán" },
+      { name: "Zira FK", aliases: ["zira", "zira fk"], lat: 40.45, lon: 49.75, city: "Bakú", country: "Azerbaiyán" },
+      { name: "Sumgayit FK", aliases: ["sumgayit", "sumqayit"], lat: 40.5833, lon: 49.6667, city: "Sumgait", country: "Azerbaiyán" },
+      { name: "FC Astana", aliases: ["astana", "fc astana"], lat: 51.1801, lon: 71.446, city: "Astaná", country: "Kazajistán" },
+      { name: "Kairat Almaty", aliases: ["kairat", "kairat almaty"], lat: 43.25, lon: 76.9, city: "Almatý", country: "Kazajistán" },
+      { name: "Tobol Kostanay", aliases: ["tobol", "tobol kostanay"], lat: 53.2, lon: 63.6, city: "Kostanay", country: "Kazajistán" },
+      { name: "Ordabasy", aliases: ["ordabasy shymkent"], lat: 42.3, lon: 69.6, city: "Shymkent", country: "Kazajistán" },
+      { name: "Aktobe", aliases: ["fc aktobe", "aktobe"], lat: 50.2833, lon: 57.1667, city: "Aktobé", country: "Kazajistán" },
+      { name: "KR Reykjavík", aliases: ["kr", "kr reykjavik"], lat: 64.1431, lon: -21.8797, city: "Reikiavik", country: "Islandia" },
+      { name: "Valur", aliases: ["valur reykjavik"], lat: 64.14, lon: -21.93, city: "Reikiavik", country: "Islandia" },
+      { name: "FH Hafnarfjörður", aliases: ["fh", "fh hafnarfjordur"], lat: 64.0667, lon: -21.95, city: "Hafnarfjörður", country: "Islandia" },
+      { name: "Víkingur Reykjavík", aliases: ["vikingur", "víkingur"], lat: 64.13, lon: -21.9, city: "Reikiavik", country: "Islandia" },
+      { name: "Breiðablik", aliases: ["breidablik", "breiðablik"], lat: 64.1, lon: -21.9, city: "Kópavogur", country: "Islandia" },
+      { name: "HJK Helsinki", aliases: ["hjk", "hjk helsinki"], lat: 60.1872, lon: 24.9225, city: "Helsinki", country: "Finlandia" },
+      { name: "KuPS", aliases: ["kups kuopio", "kups"], lat: 62.9, lon: 27.6667, city: "Kuopio", country: "Finlandia" },
+      { name: "Inter Turku", aliases: ["inter turku"], lat: 60.45, lon: 22.2667, city: "Turku", country: "Finlandia" },
+      { name: "SJK", aliases: ["sjk seinajoki", "sjk"], lat: 62.7833, lon: 22.85, city: "Seinäjoki", country: "Finlandia" },
+      { name: "Ilves", aliases: ["ilves tampere"], lat: 61.5, lon: 23.7667, city: "Tampere", country: "Finlandia" },
+      { name: "HIFK", aliases: ["hifk helsinki"], lat: 60.18, lon: 24.95, city: "Helsinki", country: "Finlandia" },
+      { name: "Shamrock Rovers", aliases: ["shamrock", "shamrock rovers"], lat: 53.2833, lon: -6.3733, city: "Dublín", country: "Irlanda" },
+      { name: "Dundalk", aliases: ["dundalk fc"], lat: 53.9994, lon: -6.4167, city: "Dundalk", country: "Irlanda" },
+      { name: "Bohemians", aliases: ["bohemians dublin", "bohs"], lat: 53.36, lon: -6.28, city: "Dublín", country: "Irlanda" },
+      { name: "St Patrick's Athletic", aliases: ["st patricks", "st patrick's"], lat: 53.34, lon: -6.31, city: "Dublín", country: "Irlanda" },
+      { name: "Derry City", aliases: ["derry city"], lat: 54.996, lon: -7.309, city: "Derry", country: "Irlanda del Norte" },
+      { name: "Shelbourne", aliases: ["shelbourne fc"], lat: 53.36, lon: -6.23, city: "Dublín", country: "Irlanda" },
+      { name: "Sligo Rovers", aliases: ["sligo", "sligo rovers"], lat: 54.27, lon: -8.48, city: "Sligo", country: "Irlanda" },
+      { name: "Linfield", aliases: ["linfield fc", "linfield"], lat: 54.5825, lon: -5.955, city: "Belfast", country: "Irlanda del Norte" },
+      { name: "Glentoran", aliases: ["glentoran fc"], lat: 54.58, lon: -5.89, city: "Belfast", country: "Irlanda del Norte" },
+      { name: "Crusaders", aliases: ["crusaders fc"], lat: 54.65, lon: -5.93, city: "Belfast", country: "Irlanda del Norte" },
+      { name: "Cliftonville", aliases: ["cliftonville fc"], lat: 54.64, lon: -5.94, city: "Belfast", country: "Irlanda del Norte" },
+      { name: "Larne", aliases: ["larne fc"], lat: 54.85, lon: -5.82, city: "Larne", country: "Irlanda del Norte" },
+      { name: "Valletta FC", aliases: ["valletta", "valletta fc"], lat: 35.895, lon: 14.5097, city: "La Valeta", country: "Malta" },
+      { name: "Hibernians", aliases: ["hibernians malta"], lat: 35.87, lon: 14.5, city: "Paola", country: "Malta" },
+      { name: "Floriana", aliases: ["floriana fc"], lat: 35.89, lon: 14.5, city: "Floriana", country: "Malta" },
+      { name: "Sliema Wanderers", aliases: ["sliema", "sliema wanderers"], lat: 35.91, lon: 14.5, city: "Sliema", country: "Malta" },
+      { name: "Hamrun Spartans", aliases: ["hamrun", "hamrun spartans"], lat: 35.88, lon: 14.48, city: "Ħamrun", country: "Malta" },
+      { name: "F91 Dudelange", aliases: ["dudelange", "f91 dudelange"], lat: 49.4822, lon: 6.085, city: "Dudelange", country: "Luxemburgo" },
+      { name: "Swift Hesperange", aliases: ["swift hesperange"], lat: 49.5667, lon: 6.15, city: "Hesperange", country: "Luxemburgo" },
+      { name: "Progrès Niederkorn", aliases: ["progres niederkorn", "progrès"], lat: 49.55, lon: 5.9, city: "Niederkorn", country: "Luxemburgo" },
+      { name: "Differdange 03", aliases: ["differdange", "fc differdange 03"], lat: 49.52, lon: 5.89, city: "Differdange", country: "Luxemburgo" },
+      { name: "Inter Club d'Escaldes", aliases: ["inter escaldes", "inter club d'escaldes"], lat: 42.51, lon: 1.54, city: "Escaldes-Engordany", country: "Andorra" },
+      { name: "UE Santa Coloma", aliases: ["santa coloma", "ue santa coloma"], lat: 42.5, lon: 1.5, city: "Santa Coloma", country: "Andorra" },
+      { name: "FC Santa Coloma", aliases: ["fc santa coloma"], lat: 42.5, lon: 1.5, city: "Santa Coloma", country: "Andorra" },
+      { name: "Lincoln Red Imps", aliases: ["lincoln", "lincoln red imps"], lat: 36.1489, lon: -5.3481, city: "Gibraltar", country: "Gibraltar" },
+      { name: "Europa FC", aliases: ["europa fc gibraltar"], lat: 36.14, lon: -5.35, city: "Gibraltar", country: "Gibraltar" },
+      { name: "St Joseph's", aliases: ["st josephs", "st joseph's"], lat: 36.14, lon: -5.35, city: "Gibraltar", country: "Gibraltar" },
+      { name: "HB Tórshavn", aliases: ["hb", "hb torshavn", "hb tórshavn"], lat: 62.0097, lon: -6.7764, city: "Tórshavn", country: "Islas Feroe" },
+      { name: "KÍ Klaksvík", aliases: ["ki", "kí klaksvík", "klaksvik"], lat: 62.2333, lon: -6.5833, city: "Klaksvík", country: "Islas Feroe" },
+      { name: "Víkingur Gøta", aliases: ["vikingur gota", "víkingur gøta"], lat: 62.1, lon: -6.75, city: "Gøta", country: "Islas Feroe" },
+      { name: "B36 Tórshavn", aliases: ["b36", "b36 tórshavn"], lat: 62.01, lon: -6.78, city: "Tórshavn", country: "Islas Feroe" },
+      { name: "SP Tre Penne", aliases: ["tre penne", "sp tre penne"], lat: 43.9361, lon: 12.4464, city: "San Marino", country: "San Marino" },
+      { name: "La Fiorita", aliases: ["la fiorita"], lat: 43.94, lon: 12.45, city: "Montegiardino", country: "San Marino" },
+      { name: "Tre Fiori", aliases: ["tre fiori", "sp tre fiori"], lat: 43.91, lon: 12.45, city: "Fiorentino", country: "San Marino" },
+      { name: "FC Vaduz", aliases: ["vaduz", "fc vaduz"], lat: 47.14, lon: 9.5214, city: "Vaduz", country: "Liechtenstein" },
+      { name: "FC Ballkani", aliases: ["ballkani", "fc ballkani"], lat: 42.3803, lon: 20.4308, city: "Suva Reka", country: "Kosovo" },
+      { name: "KF Drita", aliases: ["drita", "kf drita"], lat: 42.38, lon: 21.15, city: "Gjilan", country: "Kosovo" },
+      { name: "FC Prishtina", aliases: ["prishtina", "fc prishtina"], lat: 42.66, lon: 21.16, city: "Pristina", country: "Kosovo" },
+      { name: "KF Llapi", aliases: ["llapi", "kf llapi"], lat: 42.78, lon: 21.3, city: "Podujevo", country: "Kosovo" },
+      { name: "FK Budućnost", aliases: ["buducnost", "budućnost", "fk buducnost"], lat: 42.4411, lon: 19.2625, city: "Podgorica", country: "Montenegro" },
+      { name: "FK Sutjeska", aliases: ["sutjeska", "fk sutjeska"], lat: 42.78, lon: 18.95, city: "Nikšić", country: "Montenegro" },
+      { name: "FK Dečić", aliases: ["decic", "dečić"], lat: 42.4, lon: 19.25, city: "Tuzi", country: "Montenegro" },
+      { name: "FK Mornar", aliases: ["mornar", "fk mornar"], lat: 42.1, lon: 19.1, city: "Bar", country: "Montenegro" },
+      { name: "Sheriff Tiraspol", aliases: ["sheriff", "sheriff tiraspol"], lat: 46.84, lon: 29.6333, city: "Tiráspol", country: "Moldavia" },
+      { name: "FC Petrocub", aliases: ["petrocub", "fc petrocub"], lat: 46.9, lon: 28.85, city: "Hîncești", country: "Moldavia" },
+      { name: "FC Milsami", aliases: ["milsami", "fc milsami"], lat: 47.3, lon: 28.65, city: "Orhei", country: "Moldavia" },
+      { name: "Zimbru Chișinău", aliases: ["zimbru", "zimbru chisinau"], lat: 47.0, lon: 28.85, city: "Chisináu", country: "Moldavia" },
+      { name: "Riga FC", aliases: ["riga", "riga fc"], lat: 56.9496, lon: 24.1052, city: "Riga", country: "Letonia" },
+      { name: "RFS", aliases: ["rfs riga", "fk rfs"], lat: 56.95, lon: 24.1, city: "Riga", country: "Letonia" },
+      { name: "Valmiera FC", aliases: ["valmiera", "valmiera fc"], lat: 57.5333, lon: 25.4167, city: "Valmiera", country: "Letonia" },
+      { name: "FK Liepāja", aliases: ["liepaja", "fk liepāja"], lat: 56.5, lon: 21.0167, city: "Liepāja", country: "Letonia" },
+      { name: "FK Auda", aliases: ["auda", "fk auda"], lat: 56.9, lon: 24.2, city: "Ķekava", country: "Letonia" },
+      { name: "FK Žalgiris", aliases: ["zalgiris", "žalgiris", "fk zalgiris"], lat: 54.6872, lon: 25.2797, city: "Vilna", country: "Lituania" },
+      { name: "FK Sūduva", aliases: ["suduva", "sūduva"], lat: 54.55, lon: 23.35, city: "Marijampolė", country: "Lituania" },
+      { name: "FK Panevėžys", aliases: ["panevezys", "fk panevėžys"], lat: 55.7333, lon: 24.35, city: "Panevėžys", country: "Lituania" },
+      { name: "FA Šiauliai", aliases: ["siauliai", "fa šiauliai"], lat: 55.9333, lon: 23.3167, city: "Šiauliai", country: "Lituania" },
+      { name: "FK Hegelmann", aliases: ["hegelmann"], lat: 54.9, lon: 23.9, city: "Kaunas", country: "Lituania" },
+      { name: "FC Flora", aliases: ["flora", "fc flora tallinn"], lat: 59.437, lon: 24.7536, city: "Tallin", country: "Estonia" },
+      { name: "FCI Levadia", aliases: ["levadia", "fci levadia"], lat: 59.43, lon: 24.75, city: "Tallin", country: "Estonia" },
+      { name: "Nõmme Kalju", aliases: ["nomme kalju", "nõmme kalju"], lat: 59.38, lon: 24.7, city: "Tallin", country: "Estonia" },
+      { name: "Paide Linnameeskond", aliases: ["paide"], lat: 58.8833, lon: 25.55, city: "Paide", country: "Estonia" },
+      { name: "JK Narva Trans", aliases: ["narva trans", "jk narva trans"], lat: 59.38, lon: 28.2, city: "Narva", country: "Estonia" },
+      { name: "FC Pyunik", aliases: ["pyunik", "fc pyunik"], lat: 40.1811, lon: 44.5146, city: "Ereván", country: "Armenia" },
+      { name: "FC Ararat-Armenia", aliases: ["ararat-armenia", "ararat armenia"], lat: 40.18, lon: 44.51, city: "Ereván", country: "Armenia" },
+      { name: "FC Urartu", aliases: ["urartu", "fc urartu"], lat: 40.18, lon: 44.52, city: "Ereván", country: "Armenia" },
+      { name: "FC Alashkert", aliases: ["alashkert", "fc alashkert"], lat: 40.18, lon: 44.5, city: "Ereván", country: "Armenia" },
+      { name: "FC Noah", aliases: ["noah", "fc noah"], lat: 40.18, lon: 44.51, city: "Ereván", country: "Armenia" },
+      { name: "BATE Borisov", aliases: ["bate", "bate borisov"], lat: 54.2278, lon: 28.5056, city: "Borisov", country: "Bielorrusia" },
+      { name: "Dinamo Minsk", aliases: ["dinamo minsk"], lat: 53.9, lon: 27.55, city: "Minsk", country: "Bielorrusia" },
+      { name: "Shakhtyor Soligorsk", aliases: ["shakhtyor", "shakhtyor soligorsk"], lat: 52.8, lon: 27.5333, city: "Soligorsk", country: "Bielorrusia" },
+      { name: "Neman Grodno", aliases: ["neman", "neman grodno"], lat: 53.6833, lon: 23.8333, city: "Grodno", country: "Bielorrusia" },
+      { name: "Dynamo Brest", aliases: ["dynamo brest", "dinamo brest"], lat: 52.1, lon: 23.7, city: "Brest", country: "Bielorrusia" },
+      { name: "Isloch Minsk", aliases: ["isloch", "isloch minsk"], lat: 53.9, lon: 27.5, city: "Minsk", country: "Bielorrusia" },
+      { name: "Torpedo-BelAZ", aliases: ["torpedo belaz", "torpedo-belaz"], lat: 54.1, lon: 28.3, city: "Zhodino", country: "Bielorrusia" },
+{ name: "Barnsley", aliases: ["barnsley fc"], lat: 53.5522, lon: -1.4675, city: "Barnsley", country: "Inglaterra" },
+      { name: "Blackpool", aliases: ["blackpool fc"], lat: 53.8047, lon: -3.0481, city: "Blackpool", country: "Inglaterra" },
+      { name: "Bolton Wanderers", aliases: ["bolton", "bolton wanderers"], lat: 53.5806, lon: -2.5356, city: "Bolton", country: "Inglaterra" },
+      { name: "Bradford City", aliases: ["bradford", "bradford city"], lat: 53.8042, lon: -1.7592, city: "Bradford", country: "Inglaterra" },
+      { name: "Burton Albion", aliases: ["burton", "burton albion"], lat: 52.8217, lon: -1.6269, city: "Burton upon Trent", country: "Inglaterra" },
+      { name: "Doncaster Rovers", aliases: ["doncaster", "doncaster rovers"], lat: 53.5097, lon: -1.1139, city: "Doncaster", country: "Inglaterra" },
+      { name: "Exeter City", aliases: ["exeter", "exeter city"], lat: 50.7306, lon: -3.5211, city: "Exeter", country: "Inglaterra" },
+      { name: "Huddersfield Town", aliases: ["huddersfield", "huddersfield town"], lat: 53.6542, lon: -1.7683, city: "Huddersfield", country: "Inglaterra" },
+      { name: "Leyton Orient", aliases: ["leyton orient", "orient"], lat: 51.5601, lon: -0.0126, city: "Londres", country: "Inglaterra" },
+      { name: "Lincoln City", aliases: ["lincoln", "lincoln city"], lat: 53.2183, lon: -0.5397, city: "Lincoln", country: "Inglaterra" },
+      { name: "Mansfield Town", aliases: ["mansfield", "mansfield town"], lat: 53.1378, lon: -1.2013, city: "Mansfield", country: "Inglaterra" },
+      { name: "Northampton Town", aliases: ["northampton", "northampton town"], lat: 52.2353, lon: -0.9336, city: "Northampton", country: "Inglaterra" },
+      { name: "Peterborough United", aliases: ["peterborough", "peterborough united"], lat: 52.5647, lon: -0.2404, city: "Peterborough", country: "Inglaterra" },
+      { name: "Port Vale", aliases: ["port vale"], lat: 53.05, lon: -2.1925, city: "Stoke-on-Trent", country: "Inglaterra" },
+      { name: "Reading", aliases: ["reading fc"], lat: 51.4222, lon: -0.9828, city: "Reading", country: "Inglaterra" },
+      { name: "Rotherham United", aliases: ["rotherham", "rotherham united"], lat: 53.4281, lon: -1.37, city: "Rotherham", country: "Inglaterra" },
+      { name: "Stevenage", aliases: ["stevenage fc"], lat: 51.8894, lon: -0.1644, city: "Stevenage", country: "Inglaterra" },
+      { name: "Stockport County", aliases: ["stockport", "stockport county"], lat: 53.4, lon: -2.1667, city: "Stockport", country: "Inglaterra" },
+      { name: "Wigan Athletic", aliases: ["wigan", "wigan athletic"], lat: 53.5478, lon: -2.6539, city: "Wigan", country: "Inglaterra" },
+      { name: "Wycombe Wanderers", aliases: ["wycombe", "wycombe wanderers"], lat: 51.6306, lon: -0.8003, city: "High Wycombe", country: "Inglaterra" },
+      { name: "AFC Wimbledon", aliases: ["wimbledon", "afc wimbledon"], lat: 51.4322, lon: -0.1869, city: "Londres", country: "Inglaterra" },
+      { name: "Cambridge United", aliases: ["cambridge", "cambridge united"], lat: 52.2128, lon: 0.1543, city: "Cambridge", country: "Inglaterra" },
+      { name: "Bromley", aliases: ["bromley fc"], lat: 51.39, lon: 0.02, city: "Londres", country: "Inglaterra" },
+      { name: "Milton Keynes Dons", aliases: ["mk dons", "milton keynes dons", "mkdons"], lat: 52.0094, lon: -0.7333, city: "Milton Keynes", country: "Inglaterra" },
+      { name: "Notts County", aliases: ["notts county"], lat: 52.9425, lon: -1.1369, city: "Nottingham", country: "Inglaterra" },
+      { name: "Accrington Stanley", aliases: ["accrington", "accrington stanley"], lat: 53.7654, lon: -2.3711, city: "Accrington", country: "Inglaterra" },
+      { name: "Barnet", aliases: ["barnet fc"], lat: 51.6031, lon: -0.1917, city: "Londres", country: "Inglaterra" },
+      { name: "Barrow", aliases: ["barrow afc", "barrow"], lat: 54.1231, lon: -3.2369, city: "Barrow-in-Furness", country: "Inglaterra" },
+      { name: "Bristol Rovers", aliases: ["bristol rovers"], lat: 51.4861, lon: -2.5831, city: "Bristol", country: "Inglaterra" },
+      { name: "Cheltenham Town", aliases: ["cheltenham", "cheltenham town"], lat: 51.9069, lon: -2.0606, city: "Cheltenham", country: "Inglaterra" },
+      { name: "Chesterfield", aliases: ["chesterfield fc"], lat: 53.2535, lon: -1.4272, city: "Chesterfield", country: "Inglaterra" },
+      { name: "Colchester United", aliases: ["colchester", "colchester united"], lat: 51.9233, lon: 0.8975, city: "Colchester", country: "Inglaterra" },
+      { name: "Crawley Town", aliases: ["crawley", "crawley town"], lat: 51.0996, lon: -0.1946, city: "Crawley", country: "Inglaterra" },
+      { name: "Crewe Alexandra", aliases: ["crewe", "crewe alexandra"], lat: 53.0875, lon: -2.4357, city: "Crewe", country: "Inglaterra" },
+      { name: "Fleetwood Town", aliases: ["fleetwood", "fleetwood town"], lat: 53.9167, lon: -3.0167, city: "Fleetwood", country: "Inglaterra" },
+      { name: "Gillingham", aliases: ["gillingham fc"], lat: 51.3844, lon: 0.5608, city: "Gillingham", country: "Inglaterra" },
+      { name: "Grimsby Town", aliases: ["grimsby", "grimsby town"], lat: 53.57, lon: -0.08, city: "Grimsby", country: "Inglaterra" },
+      { name: "Harrogate Town", aliases: ["harrogate", "harrogate town"], lat: 53.9917, lon: -1.5333, city: "Harrogate", country: "Inglaterra" },
+      { name: "Newport County", aliases: ["newport county"], lat: 51.5667, lon: -2.9833, city: "Newport", country: "Gales" },
+      { name: "Oldham Athletic", aliases: ["oldham", "oldham athletic"], lat: 53.5551, lon: -2.1285, city: "Oldham", country: "Inglaterra" },
+      { name: "Salford City", aliases: ["salford", "salford city"], lat: 53.4875, lon: -2.275, city: "Salford", country: "Inglaterra" },
+      { name: "Shrewsbury Town", aliases: ["shrewsbury", "shrewsbury town"], lat: 52.6886, lon: -2.7492, city: "Shrewsbury", country: "Inglaterra" },
+      { name: "Swindon Town", aliases: ["swindon", "swindon town"], lat: 51.5644, lon: -1.7706, city: "Swindon", country: "Inglaterra" },
+      { name: "Tranmere Rovers", aliases: ["tranmere", "tranmere rovers"], lat: 53.3736, lon: -3.0325, city: "Birkenhead", country: "Inglaterra" },
+      { name: "Walsall", aliases: ["walsall fc"], lat: 52.5655, lon: -1.9905, city: "Walsall", country: "Inglaterra" },
+      { name: "Morecambe", aliases: ["morecambe fc"], lat: 54.0614, lon: -2.8669, city: "Morecambe", country: "Inglaterra" },
+      { name: "Carlisle United", aliases: ["carlisle", "carlisle united"], lat: 54.8955, lon: -2.9137, city: "Carlisle", country: "Inglaterra" },
+      { name: "Forest Green Rovers", aliases: ["forest green", "forest green rovers"], lat: 51.6983, lon: -2.2381, city: "Nailsworth", country: "Inglaterra" },
+      { name: "Sutton United", aliases: ["sutton", "sutton united"], lat: 51.3675, lon: -0.2042, city: "Londres", country: "Inglaterra" },
+      { name: "Real Madrid Castilla", aliases: ["real madrid b", "castilla", "real madrid castilla"], lat: 40.4789, lon: -3.6856, city: "Madrid", country: "España" },
+      { name: "Atlético de Madrid B", aliases: ["atletico b", "atlético b", "atletico madrid b"], lat: 40.4362, lon: -3.5995, city: "Madrid", country: "España" },
+      { name: "Barcelona Atlètic", aliases: ["barcelona b", "barça b", "barcelona atlètic"], lat: 41.3809, lon: 2.1228, city: "Barcelona", country: "España" },
+      { name: "Villarreal B", aliases: ["villarreal b"], lat: 39.9441, lon: -0.1035, city: "Villarreal", country: "España" },
+      { name: "Sevilla Atlético", aliases: ["sevilla atletico", "sevilla atlético"], lat: 37.3841, lon: -5.9706, city: "Sevilla", country: "España" },
+      { name: "Betis Deportivo", aliases: ["betis b", "betis deportivo"], lat: 37.3565, lon: -5.9817, city: "Sevilla", country: "España" },
+      { name: "Athletic Club B", aliases: ["athletic b", "bilbao athletic"], lat: 43.2642, lon: -2.9494, city: "Bilbao", country: "España" },
+      { name: "Real Sociedad B", aliases: ["real sociedad b", "sanse"], lat: 43.3014, lon: -1.9736, city: "San Sebastián", country: "España" },
+      { name: "Celta Fortuna", aliases: ["celta b", "celta fortuna"], lat: 42.2118, lon: -8.7397, city: "Vigo", country: "España" },
+      { name: "Deportivo Fabril", aliases: ["deportivo b", "fabril"], lat: 43.368, lon: -8.417, city: "A Coruña", country: "España" },
+      { name: "AD Alcorcón", aliases: ["alcorcon", "alcorcón"], lat: 40.35, lon: -3.8289, city: "Alcorcón", country: "España" },
+      { name: "Rayo Majadahonda", aliases: ["rayo majadahonda", "majadahonda"], lat: 40.4736, lon: -3.8722, city: "Majadahonda", country: "España" },
+      { name: "CF Fuenlabrada", aliases: ["fuenlabrada"], lat: 40.2842, lon: -3.7942, city: "Fuenlabrada", country: "España" },
+      { name: "AD Mérida", aliases: ["merida", "mérida"], lat: 38.9167, lon: -6.3333, city: "Mérida", country: "España" },
+      { name: "SD Ponferradina", aliases: ["ponferradina"], lat: 42.55, lon: -6.6, city: "Ponferrada", country: "España" },
+      { name: "Cultural Leonesa", aliases: ["cultural leonesa", "leonesa"], lat: 42.5989, lon: -5.5672, city: "León", country: "España" },
+      { name: "Unionistas de Salamanca", aliases: ["unionistas", "unionistas salamanca"], lat: 40.97, lon: -5.663, city: "Salamanca", country: "España" },
+      { name: "Zamora CF", aliases: ["zamora"], lat: 41.5033, lon: -5.7439, city: "Zamora", country: "España" },
+      { name: "CD Lugo", aliases: ["lugo"], lat: 43.01, lon: -7.556, city: "Lugo", country: "España" },
+      { name: "Racing de Ferrol", aliases: ["racing ferrol", "ferrol"], lat: 43.4833, lon: -8.2333, city: "Ferrol", country: "España" },
+      { name: "Pontevedra CF", aliases: ["pontevedra"], lat: 42.4333, lon: -8.65, city: "Pontevedra", country: "España" },
+      { name: "Real Avilés", aliases: ["aviles", "real avilés", "avilés"], lat: 43.55, lon: -5.9167, city: "Avilés", country: "España" },
+      { name: "Barakaldo CF", aliases: ["barakaldo"], lat: 43.2972, lon: -2.9917, city: "Barakaldo", country: "España" },
+      { name: "Arenas Club", aliases: ["arenas getxo", "arenas"], lat: 43.35, lon: -3.0167, city: "Getxo", country: "España" },
+      { name: "Real Unión", aliases: ["real union", "real unión irún"], lat: 43.3389, lon: -1.7889, city: "Irún", country: "España" },
+      { name: "Sestao River", aliases: ["sestao", "sestao river"], lat: 43.31, lon: -3.0067, city: "Sestao", country: "España" },
+      { name: "CD Numancia", aliases: ["numancia"], lat: 41.7667, lon: -2.4667, city: "Soria", country: "España" },
+      { name: "Gimnàstic de Tarragona", aliases: ["nastic", "gimnastic tarragona", "nàstic"], lat: 41.1167, lon: 1.25, city: "Tarragona", country: "España" },
+      { name: "CE Sabadell", aliases: ["sabadell"], lat: 41.55, lon: 2.1, city: "Sabadell", country: "España" },
+      { name: "CE Europa", aliases: ["europa barcelona", "ce europa"], lat: 41.42, lon: 2.16, city: "Barcelona", country: "España" },
+      { name: "UE Sant Andreu", aliases: ["sant andreu"], lat: 41.435, lon: 2.19, city: "Barcelona", country: "España" },
+      { name: "Hércules CF", aliases: ["hercules", "hércules"], lat: 38.3575, lon: -0.4864, city: "Alicante", country: "España" },
+      { name: "CD Eldense", aliases: ["eldense"], lat: 38.4667, lon: -0.7833, city: "Elda", country: "España" },
+      { name: "Real Murcia", aliases: ["murcia", "real murcia"], lat: 37.9833, lon: -1.13, city: "Murcia", country: "España" },
+      { name: "UD Ibiza", aliases: ["ibiza", "ud ibiza"], lat: 38.9089, lon: 1.4328, city: "Ibiza", country: "España" },
+      { name: "Algeciras CF", aliases: ["algeciras"], lat: 36.1333, lon: -5.45, city: "Algeciras", country: "España" },
+      { name: "Antequera CF", aliases: ["antequera"], lat: 37.0167, lon: -4.5667, city: "Antequera", country: "España" },
+      { name: "Marbella FC", aliases: ["marbella"], lat: 36.51, lon: -4.885, city: "Marbella", country: "España" },
+      { name: "Recreativo de Huelva", aliases: ["recreativo", "recre", "recreativo huelva"], lat: 37.2611, lon: -6.9522, city: "Huelva", country: "España" },
+      { name: "Real Jaén", aliases: ["real jaen", "real jaén"], lat: 37.7667, lon: -3.79, city: "Jaén", country: "España" },
+      { name: "Linares Deportivo", aliases: ["linares"], lat: 38.095, lon: -3.636, city: "Linares", country: "España" },
+      { name: "Córdoba CF", aliases: ["cordoba", "córdoba"], lat: 37.8847, lon: -4.7792, city: "Córdoba", country: "España" },
+      { name: "UD Melilla", aliases: ["melilla"], lat: 35.2922, lon: -2.9381, city: "Melilla", country: "España" },
+      { name: "Ceuta", aliases: ["ad ceuta", "ceuta"], lat: 35.8883, lon: -5.3164, city: "Ceuta", country: "España" },
+      { name: "CD Teruel", aliases: ["teruel"], lat: 40.35, lon: -1.1, city: "Teruel", country: "España" },
+      { name: "CD Tarazona", aliases: ["tarazona"], lat: 41.9, lon: -1.7167, city: "Tarazona", country: "España" },
+      { name: "UD Logroñés", aliases: ["logrones", "ud logroñés"], lat: 42.465, lon: -2.445, city: "Logroño", country: "España" },
+      { name: "SD Logroñés", aliases: ["sd logroñés"], lat: 42.465, lon: -2.445, city: "Logroño", country: "España" },
+      { name: "Osasuna B", aliases: ["osasuna b", "promesas"], lat: 42.7967, lon: -1.6369, city: "Pamplona", country: "España" },
+      { name: "CD Tudelano", aliases: ["tudelano"], lat: 42.0667, lon: -1.6067, city: "Tudela", country: "España" },
+      { name: "CD Badajoz", aliases: ["badajoz"], lat: 38.8794, lon: -6.9706, city: "Badajoz", country: "España" },
+      { name: "Extremadura UD", aliases: ["extremadura"], lat: 38.88, lon: -6.97, city: "Almendralejo", country: "España" },
+      { name: "CP Cacereño", aliases: ["cacereno", "cacereño"], lat: 39.475, lon: -6.3722, city: "Cáceres", country: "España" },
+      { name: "CD Coria", aliases: ["coria"], lat: 39.9833, lon: -6.5333, city: "Coria", country: "España" },
+      { name: "Ourense CF", aliases: ["ourense"], lat: 42.3364, lon: -7.8639, city: "Ourense", country: "España" },
+      { name: "SD Compostela", aliases: ["compostela"], lat: 42.88, lon: -8.545, city: "Santiago de Compostela", country: "España" },
+      { name: "Racing de Santander B", aliases: ["racing b", "rayo cantabria"], lat: 43.4764, lon: -3.7933, city: "Santander", country: "España" },
+      { name: "Real Oviedo Vetusta", aliases: ["oviedo b", "vetusta"], lat: 43.365, lon: -5.87, city: "Oviedo", country: "España" },
+      { name: "Sporting de Gijón B", aliases: ["sporting b", "mareo"], lat: 43.536, lon: -5.634, city: "Gijón", country: "España" },
+      { name: "Real Valladolid Promesas", aliases: ["valladolid b", "promesas"], lat: 41.6444, lon: -4.7611, city: "Valladolid", country: "España" },
+      { name: "Gimnástica Segoviana", aliases: ["segoviana", "gimnastica segoviana"], lat: 40.9481, lon: -4.1189, city: "Segovia", country: "España" },
+      { name: "CD Atlético Baleares", aliases: ["atletico baleares", "atlético baleares"], lat: 39.57, lon: 2.65, city: "Palma", country: "España" },
+      { name: "UE Cornellà", aliases: ["cornella", "cornellà"], lat: 41.35, lon: 2.07, city: "Cornellà", country: "España" },
+      { name: "CF Intercity", aliases: ["intercity", "intercity alicante"], lat: 38.35, lon: -0.48, city: "Sant Joan d'Alacant", country: "España" },
+      { name: "Yeclano Deportivo", aliases: ["yeclano"], lat: 38.6167, lon: -1.1167, city: "Yecla", country: "España" },
+      { name: "Águilas FC", aliases: ["aguilas", "águilas"], lat: 37.4, lon: -1.5833, city: "Águilas", country: "España" },
+      { name: "UCAM Murcia", aliases: ["ucam", "ucam murcia"], lat: 37.9833, lon: -1.13, city: "Murcia", country: "España" },
+      { name: "Xerez CD", aliases: ["xerez"], lat: 36.6867, lon: -6.1372, city: "Jerez de la Frontera", country: "España" },
+      { name: "Atlético Sanluqueño", aliases: ["sanluqueño", "atletico sanluqueno"], lat: 36.7789, lon: -6.3514, city: "Sanlúcar de Barrameda", country: "España" },
+      { name: "Juventud Torremolinos", aliases: ["torremolinos"], lat: 36.62, lon: -4.5, city: "Torremolinos", country: "España" },
+      { name: "CD Estepona", aliases: ["estepona"], lat: 36.425, lon: -5.15, city: "Estepona", country: "España" },
+      { name: "Atlético Antoniano", aliases: ["antoniano"], lat: 37.3833, lon: -5.9833, city: "Lebrija", country: "España" },
+      { name: "CD Minera", aliases: ["minera", "la union atletico"], lat: 37.6167, lon: -0.8833, city: "La Unión", country: "España" },
+      { name: "UD Tamaraceite", aliases: ["tamaraceite"], lat: 28.1, lon: -15.45, city: "Las Palmas", country: "España" },
+      { name: "Atlético Paso", aliases: ["atletico paso"], lat: 28.65, lon: -17.85, city: "El Paso", country: "España" },
+      { name: "Las Palmas Atlético", aliases: ["las palmas b"], lat: 28.1004, lon: -15.4567, city: "Las Palmas", country: "España" },
+      { name: "Tenerife B", aliases: ["tenerife b"], lat: 28.4564, lon: -16.2958, city: "Santa Cruz de Tenerife", country: "España" },
+      { name: "CD Calahorra", aliases: ["calahorra"], lat: 42.3, lon: -1.9667, city: "Calahorra", country: "España" },
+      { name: "SD Ejea", aliases: ["ejea"], lat: 42.1333, lon: -1.1333, city: "Ejea de los Caballeros", country: "España" },
+      { name: "CD Ebro", aliases: ["ebro"], lat: 41.65, lon: -0.8833, city: "Zaragoza", country: "España" },
+      { name: "Utebo FC", aliases: ["utebo"], lat: 41.7167, lon: -0.9833, city: "Utebo", country: "España" },
+      { name: "Barbastro", aliases: ["ud barbastro"], lat: 42.0333, lon: 0.1167, city: "Barbastro", country: "España" },
+      { name: "Náxara CD", aliases: ["naxara", "náxara"], lat: 42.4167, lon: -2.7333, city: "Nájera", country: "España" },
+      { name: "Peña Sport", aliases: ["pena sport", "peña sport"], lat: 42.8167, lon: -1.65, city: "Tafalla", country: "España" },
+      { name: "CD Basconia", aliases: ["basconia"], lat: 43.3167, lon: -2.9833, city: "Basauri", country: "España" },
+      { name: "SD Gernika", aliases: ["gernika", "sd gernika"], lat: 43.3167, lon: -2.6833, city: "Gernika", country: "España" },
+      { name: "SD Beasain", aliases: ["beasain"], lat: 43.05, lon: -2.2, city: "Beasain", country: "España" },
+      { name: "Sestao River Club", aliases: ["sestao river club"], lat: 43.31, lon: -3.0067, city: "Sestao", country: "España" },
+      { name: "Real Unión Club", aliases: ["real union club"], lat: 43.3389, lon: -1.7889, city: "Irún", country: "España" },
+      { name: "Coruxo FC", aliases: ["coruxo"], lat: 42.2, lon: -8.78, city: "Vigo", country: "España" },
+      { name: "Bergantiños CF", aliases: ["bergantinos", "bergantiños"], lat: 43.2167, lon: -8.6833, city: "Carballo", country: "España" },
+      { name: "UD Ourense", aliases: ["ud ourense"], lat: 42.3364, lon: -7.8639, city: "Ourense", country: "España" },
+      { name: "Marino de Luanco", aliases: ["marino luanco"], lat: 43.6167, lon: -5.7833, city: "Luanco", country: "España" },
+      { name: "UP Langreo", aliases: ["langreo"], lat: 43.3, lon: -5.6833, city: "Langreo", country: "España" },
+      { name: "CD Lealtad", aliases: ["lealtad"], lat: 43.4833, lon: -5.4333, city: "Villaviciosa", country: "España" },
+      { name: "Real Ávila", aliases: ["real avila", "real ávila"], lat: 40.6567, lon: -4.6972, city: "Ávila", country: "España" },
+      { name: "Salamanca CF UDS", aliases: ["salamanca uds", "salamanca cf"], lat: 40.97, lon: -5.663, city: "Salamanca", country: "España" },
+      { name: "Gimnástica de Torrelavega", aliases: ["torrelavega", "gimnastica torrelavega"], lat: 43.35, lon: -4.05, city: "Torrelavega", country: "España" },
+      { name: "Rayo Cantabria", aliases: ["rayo cantabria"], lat: 43.4764, lon: -3.7933, city: "Santander", country: "España" },
+      { name: "Arosa SC", aliases: ["arosa"], lat: 42.4333, lon: -8.6333, city: "Vilagarcía de Arousa", country: "España" },
+      { name: "Portugalete", aliases: ["club portugalete"], lat: 43.3167, lon: -3.0167, city: "Portugalete", country: "España" },
+      { name: "CE Manresa", aliases: ["manresa"], lat: 41.728, lon: 1.826, city: "Manresa", country: "España" },
+      { name: "Terrassa FC", aliases: ["terrassa"], lat: 41.5667, lon: 2.0167, city: "Terrassa", country: "España" },
+      { name: "UE Olot", aliases: ["olot"], lat: 42.1833, lon: 2.4833, city: "Olot", country: "España" },
+      { name: "Reus FC", aliases: ["reus"], lat: 41.15, lon: 1.1, city: "Reus", country: "España" },
+      { name: "CF La Nucía", aliases: ["la nucia", "la nucía"], lat: 38.6167, lon: -0.1167, city: "La Nucía", country: "España" },
+      { name: "Atlético Tordesillas", aliases: ["tordesillas"], lat: 41.5, lon: -5.0, city: "Tordesillas", country: "España" },
+      { name: "CP Mijas", aliases: ["mijas"], lat: 36.6, lon: -4.6333, city: "Mijas", country: "España" },
+      { name: "CD Ciudad de Lucena", aliases: ["lucena"], lat: 37.4, lon: -4.4833, city: "Lucena", country: "España" },
+      { name: "SCR Peña Deportiva", aliases: ["pena deportiva", "peña deportiva"], lat: 38.98, lon: 1.3, city: "Santa Eulària", country: "España" },
+      { name: "CD Atlético Paso", aliases: ["atletico paso", "cd atletico paso"], lat: 28.65, lon: -17.85, city: "El Paso", country: "España" },
+      { name: "CD Cieza", aliases: ["cieza"], lat: 38.25, lon: -1.4167, city: "Cieza", country: "España" },
+      { name: "Real Murcia Imperial", aliases: ["murcia imperial"], lat: 37.9833, lon: -1.13, city: "Murcia", country: "España" },
+      { name: "CD Don Benito", aliases: ["don benito"], lat: 38.95, lon: -5.8667, city: "Don Benito", country: "España" },
+      { name: "CD Arnedo", aliases: ["arnedo"], lat: 42.2167, lon: -2.1, city: "Arnedo", country: "España" },
+      { name: "CF Calamocha", aliases: ["calamocha"], lat: 40.9167, lon: -1.3, city: "Calamocha", country: "España" },
+      { name: "Calvo Sotelo Puertollano", aliases: ["puertollano", "calvo sotelo"], lat: 38.6833, lon: -4.1167, city: "Puertollano", country: "España" },
+      { name: "Atlético Albacete", aliases: ["atletico albacete"], lat: 38.9811, lon: -1.8519, city: "Albacete", country: "España" },
+      { name: "Caudal Deportivo", aliases: ["caudal"], lat: 43.2, lon: -5.7667, city: "Mieres", country: "España" },
+      { name: "UD Llanera", aliases: ["llanera"], lat: 43.45, lon: -5.85, city: "Llanera", country: "España" },
+      { name: "Cultural y Deportiva Leonesa", aliases: ["cultural leonesa", "cultural"], lat: 42.5989, lon: -5.5672, city: "León", country: "España" },
+      { name: "Atlético Madrileño", aliases: ["atletico madrileno", "atlético madrileño", "atletico madrid b"], lat: 40.4362, lon: -3.5995, city: "Madrid", country: "España" },
+      { name: "CD Extremadura", aliases: ["extremadura", "cd extremadura"], lat: 38.88, lon: -6.97, city: "Almendralejo", country: "España" },
+      { name: "RC Deportivo Fabril", aliases: ["fabril", "deportivo fabril"], lat: 43.368, lon: -8.417, city: "A Coruña", country: "España" },
+      { name: "Real Avilés Industrial", aliases: ["aviles industrial", "real avilés"], lat: 43.55, lon: -5.9167, city: "Avilés", country: "España" },
+      { name: "Juventud de Torremolinos", aliases: ["torremolinos", "juventud torremolinos"], lat: 36.62, lon: -4.5, city: "Torremolinos", country: "España" },
+      { name: "Real Jaén CF", aliases: ["real jaen", "real jaén"], lat: 37.7667, lon: -3.79, city: "Jaén", country: "España" },
+      { name: "CF Rayo Majadahonda", aliases: ["rayo majadahonda"], lat: 40.4736, lon: -3.8722, city: "Majadahonda", country: "España" },
+      { name: "Villarreal CF B", aliases: ["villarreal b"], lat: 39.9441, lon: -0.1035, city: "Villarreal", country: "España" },
+      { name: "Real Murcia CF", aliases: ["real murcia"], lat: 37.9833, lon: -1.13, city: "Murcia", country: "España" },
+      { name: "Compostela", aliases: ["sd compostela", "compostela"], lat: 42.88, lon: -8.545, city: "Santiago de Compostela", country: "España" },
+      { name: "Bergantiños", aliases: ["bergantinos", "bergantiños"], lat: 43.2167, lon: -8.6833, city: "Carballo", country: "España" },
+      { name: "Llanera", aliases: ["ud llanera"], lat: 43.45, lon: -5.85, city: "Llanera", country: "España" },
+      { name: "Gimnástica Torrelavega", aliases: ["torrelavega", "gimnastica torrelavega"], lat: 43.35, lon: -4.05, city: "Torrelavega", country: "España" },
+      { name: "Marino Luanco", aliases: ["marino luanco"], lat: 43.6167, lon: -5.7833, city: "Luanco", country: "España" },
+      { name: "Oviedo Vetusta", aliases: ["oviedo b", "vetusta"], lat: 43.365, lon: -5.87, city: "Oviedo", country: "España" },
+      { name: "Atlético Astorga", aliases: ["astorga", "atletico astorga"], lat: 42.45, lon: -6.05, city: "Astorga", country: "España" },
+      { name: "Basconia", aliases: ["cd basconia"], lat: 43.3167, lon: -2.9833, city: "Basauri", country: "España" },
+      { name: "Gernika", aliases: ["sd gernika"], lat: 43.3167, lon: -2.6833, city: "Gernika", country: "España" },
+      { name: "Eibar B", aliases: ["eibar b"], lat: 43.1819, lon: -2.4756, city: "Eibar", country: "España" },
+      { name: "Alavés B", aliases: ["alaves b", "alavés b"], lat: 42.8372, lon: -2.6881, city: "Vitoria", country: "España" },
+      { name: "Amorebieta", aliases: ["sd amorebieta"], lat: 43.22, lon: -2.7333, city: "Amorebieta", country: "España" },
+      { name: "Tudelano", aliases: ["cd tudelano"], lat: 42.0667, lon: -1.6067, city: "Tudela", country: "España" },
+      { name: "Ebro", aliases: ["cd ebro"], lat: 41.65, lon: -0.8833, city: "Zaragoza", country: "España" },
+      { name: "Utebo", aliases: ["utebo fc"], lat: 41.7167, lon: -0.9833, city: "Utebo", country: "España" },
+      { name: "Náxara", aliases: ["naxara", "náxara"], lat: 42.4167, lon: -2.7333, city: "Nájera", country: "España" },
+      { name: "UD Logroñés B", aliases: ["logrones b"], lat: 42.465, lon: -2.445, city: "Logroño", country: "España" },
+      { name: "Arnedo", aliases: ["cd arnedo"], lat: 42.2167, lon: -2.1, city: "Arnedo", country: "España" },
+      { name: "Manresa", aliases: ["ce manresa"], lat: 41.728, lon: 1.826, city: "Manresa", country: "España" },
+      { name: "Terrassa", aliases: ["terrassa fc"], lat: 41.5667, lon: 2.0167, city: "Terrassa", country: "España" },
+      { name: "Olot", aliases: ["ue olot"], lat: 42.1833, lon: 2.4833, city: "Olot", country: "España" },
+      { name: "Reus", aliases: ["reus fc"], lat: 41.15, lon: 1.1, city: "Reus", country: "España" },
+      { name: "Espanyol B", aliases: ["espanyol b"], lat: 41.3479, lon: 2.0754, city: "Barcelona", country: "España" },
+      { name: "Girona B", aliases: ["girona b"], lat: 41.9614, lon: 2.8286, city: "Girona", country: "España" },
+      { name: "Castellón B", aliases: ["castellon b"], lat: 39.9861, lon: -0.0369, city: "Castellón", country: "España" },
+      { name: "Valencia Mestalla", aliases: ["valencia b", "mestalla"], lat: 39.4747, lon: -0.3584, city: "Valencia", country: "España" },
+      { name: "Alcoyano", aliases: ["cd alcoyano"], lat: 38.7, lon: -0.4667, city: "Alcoy", country: "España" },
+      { name: "Atlético Baleares", aliases: ["atletico baleares"], lat: 39.57, lon: 2.65, city: "Palma", country: "España" },
+      { name: "Mallorca B", aliases: ["mallorca b"], lat: 39.5899, lon: 2.6301, city: "Palma", country: "España" },
+      { name: "Poblense", aliases: ["ud poblense"], lat: 39.7167, lon: 3.0167, city: "Sa Pobla", country: "España" },
+      { name: "Peña Deportiva", aliases: ["pena deportiva", "peña deportiva"], lat: 38.98, lon: 1.3, city: "Santa Eulària", country: "España" },
+      { name: "La Nucía", aliases: ["la nucia", "cf la nucía"], lat: 38.6167, lon: -0.1167, city: "La Nucía", country: "España" },
+      { name: "Intercity", aliases: ["cf intercity"], lat: 38.35, lon: -0.48, city: "Sant Joan d'Alacant", country: "España" },
+      { name: "Cieza", aliases: ["cd cieza"], lat: 38.25, lon: -1.4167, city: "Cieza", country: "España" },
+      { name: "Murcia Imperial", aliases: ["real murcia imperial"], lat: 37.9833, lon: -1.13, city: "Murcia", country: "España" },
+      { name: "Yeclano", aliases: ["yeclano deportivo"], lat: 38.6167, lon: -1.1167, city: "Yecla", country: "España" },
+      { name: "Minera", aliases: ["cd minera"], lat: 37.6167, lon: -0.8833, city: "La Unión", country: "España" },
+      { name: "Orihuela", aliases: ["orihuela cf"], lat: 38.0833, lon: -0.95, city: "Orihuela", country: "España" },
+      { name: "Castellonense", aliases: ["ud castellonense"], lat: 39.9861, lon: -0.0369, city: "Castellón", country: "España" },
+      { name: "Recreativo Huelva", aliases: ["recreativo", "recre"], lat: 37.2611, lon: -6.9522, city: "Huelva", country: "España" },
+      { name: "Ciudad de Lucena", aliases: ["lucena"], lat: 37.4, lon: -4.4833, city: "Lucena", country: "España" },
+      { name: "Linares", aliases: ["linares deportivo"], lat: 38.095, lon: -3.636, city: "Linares", country: "España" },
+      { name: "Marbella", aliases: ["marbella fc"], lat: 36.51, lon: -4.885, city: "Marbella", country: "España" },
+      { name: "Mijas", aliases: ["cp mijas"], lat: 36.6, lon: -4.6333, city: "Mijas", country: "España" },
+      { name: "Estepona", aliases: ["cd estepona"], lat: 36.425, lon: -5.15, city: "Estepona", country: "España" },
+      { name: "Atlético Central", aliases: ["atletico central"], lat: 37.3833, lon: -5.9833, city: "Sevilla", country: "España" },
+      { name: "Badajoz", aliases: ["cd badajoz"], lat: 38.8794, lon: -6.9706, city: "Badajoz", country: "España" },
+      { name: "Don Benito", aliases: ["cd don benito"], lat: 38.95, lon: -5.8667, city: "Don Benito", country: "España" },
+      { name: "Tamaraceite", aliases: ["ud tamaraceite"], lat: 28.1, lon: -15.45, city: "Las Palmas", country: "España" },
+      { name: "Salamanca UDS", aliases: ["salamanca uds"], lat: 40.97, lon: -5.663, city: "Salamanca", country: "España" },
+      { name: "Numancia", aliases: ["cd numancia"], lat: 41.7667, lon: -2.4667, city: "Soria", country: "España" },
+      { name: "Calahorra", aliases: ["cd calahorra"], lat: 42.3, lon: -1.9667, city: "Calahorra", country: "España" },
+      { name: "Guadalajara", aliases: ["cd guadalajara"], lat: 40.6333, lon: -3.1667, city: "Guadalajara", country: "España" },
+      { name: "Getafe B", aliases: ["getafe b"], lat: 40.3255, lon: -3.7149, city: "Getafe", country: "España" },
+      { name: "Talavera", aliases: ["cf talavera"], lat: 39.9583, lon: -4.8306, city: "Talavera de la Reina", country: "España" },
+      { name: "Calvo Sotelo", aliases: ["puertollano", "calvo sotelo"], lat: 38.6833, lon: -4.1167, city: "Puertollano", country: "España" },
+      { name: "Calamocha", aliases: ["cf calamocha"], lat: 40.9167, lon: -1.3, city: "Calamocha", country: "España" },
+      { name: "Valladolid Promesas", aliases: ["valladolid b"], lat: 41.6444, lon: -4.7611, city: "Valladolid", country: "España" },
+      { name: "Atlético Madrid C", aliases: ["atletico c", "atlético madrid c"], lat: 40.4362, lon: -3.5995, city: "Madrid", country: "España" },
+      { name: "Alcalá", aliases: ["rsd alcala", "alcalá"], lat: 40.4817, lon: -3.3636, city: "Alcalá de Henares", country: "España" },
+      { name: "Conquense", aliases: ["ud conquense"], lat: 40.0667, lon: -2.1333, city: "Cuenca", country: "España" },
+      { name: "San Sebastián de los Reyes", aliases: ["sanse", "ss de los reyes"], lat: 40.55, lon: -3.6167, city: "San Sebastián de los Reyes", country: "España" },
+      { name: "Navalcarnero", aliases: ["cd navalcarnero"], lat: 40.2833, lon: -4.0167, city: "Navalcarnero", country: "España" },
+      { name: "Real Madrid C", aliases: ["real madrid c"], lat: 40.4789, lon: -3.6856, city: "Madrid", country: "España" },
+      { name: "Alondras", aliases: ["alondras cf"], lat: 42.2667, lon: -8.7833, city: "Cangas", country: "España" },
+      { name: "Atlético Arteixo", aliases: ["arteixo"], lat: 43.3167, lon: -8.5, city: "Arteixo", country: "España" },
+      { name: "Montañeros", aliases: ["atletico coruña montañeros"], lat: 43.368, lon: -8.417, city: "A Coruña", country: "España" },
+      { name: "Barbadás", aliases: ["ud barbadas"], lat: 42.3, lon: -7.8833, city: "Barbadás", country: "España" },
+      { name: "Barco", aliases: ["cd barco"], lat: 42.4167, lon: -6.9833, city: "O Barco de Valdeorras", country: "España" },
+      { name: "Boiro", aliases: ["cd boiro"], lat: 42.65, lon: -8.8833, city: "Boiro", country: "España" },
+      { name: "Céltiga", aliases: ["celtiga"], lat: 42.5667, lon: -8.8667, city: "A Illa de Arousa", country: "España" },
+      { name: "Estradense", aliases: ["cd estradense"], lat: 42.7, lon: -8.4833, city: "A Estrada", country: "España" },
+      { name: "Gran Peña", aliases: ["gran pena"], lat: 42.2, lon: -8.75, city: "Vigo", country: "España" },
+      { name: "Juventud Cambados", aliases: ["cambados"], lat: 42.5167, lon: -8.8167, city: "Cambados", country: "España" },
+      { name: "Noia", aliases: ["cf noia"], lat: 42.7833, lon: -8.8833, city: "Noia", country: "España" },
+      { name: "Polvorín", aliases: ["polvorin"], lat: 43.01, lon: -7.556, city: "Lugo", country: "España" },
+      { name: "Racing Villalbés", aliases: ["villalbes"], lat: 43.3, lon: -7.6833, city: "Vilalba", country: "España" },
+      { name: "Silva", aliases: ["silva sd"], lat: 43.368, lon: -8.417, city: "A Coruña", country: "España" },
+      { name: "Somozas", aliases: ["ud somozas"], lat: 43.5333, lon: -7.9333, city: "As Somozas", country: "España" },
+      { name: "Viveiro", aliases: ["viveiro cf"], lat: 43.6667, lon: -7.6, city: "Viveiro", country: "España" },
+      { name: "Ceares", aliases: ["uc ceares"], lat: 43.536, lon: -5.634, city: "Gijón", country: "España" },
+      { name: "Colunga", aliases: ["cd colunga"], lat: 43.4833, lon: -5.2667, city: "Colunga", country: "España" },
+      { name: "Covadonga", aliases: ["cd covadonga"], lat: 43.365, lon: -5.87, city: "Oviedo", country: "España" },
+      { name: "Gijón Industrial", aliases: ["gijon industrial"], lat: 43.536, lon: -5.634, city: "Gijón", country: "España" },
+      { name: "L'Entregu", aliases: ["entregu"], lat: 43.3, lon: -5.6333, city: "El Entrego", country: "España" },
+      { name: "Lenense", aliases: ["lenense"], lat: 43.15, lon: -5.8333, city: "Pola de Lena", country: "España" },
+      { name: "Llanes", aliases: ["cd llanes"], lat: 43.4167, lon: -4.75, city: "Llanes", country: "España" },
+      { name: "Mosconia", aliases: ["mosconia"], lat: 43.3833, lon: -6.0667, city: "Grado", country: "España" },
+      { name: "Navarro", aliases: ["navarro cf"], lat: 43.55, lon: -5.9167, city: "Avilés", country: "España" },
+      { name: "Praviano", aliases: ["praviano"], lat: 43.4833, lon: -6.1167, city: "Pravia", country: "España" },
+      { name: "Sporting Atlético", aliases: ["sporting b"], lat: 43.536, lon: -5.634, city: "Gijón", country: "España" },
+      { name: "Atlético Albericia", aliases: ["albericia"], lat: 43.4623, lon: -3.81, city: "Santander", country: "España" },
+      { name: "Barquereño", aliases: ["barquereno"], lat: 43.3833, lon: -4.4, city: "San Vicente de la Barquera", country: "España" },
+      { name: "Bezana", aliases: ["cd bezana"], lat: 43.45, lon: -3.9, city: "Santa Cruz de Bezana", country: "España" },
+      { name: "Cartes", aliases: ["uc cartes"], lat: 43.3333, lon: -4.0667, city: "Cartes", country: "España" },
+      { name: "Castro", aliases: ["castro fc"], lat: 43.3833, lon: -3.2167, city: "Castro-Urdiales", country: "España" },
+      { name: "Cayón", aliases: ["cd cayon"], lat: 43.3333, lon: -3.8333, city: "Sarón", country: "España" },
+      { name: "Colindres", aliases: ["cd colindres"], lat: 43.4, lon: -3.45, city: "Colindres", country: "España" },
+      { name: "Escobedo", aliases: ["um escobedo"], lat: 43.4, lon: -3.95, city: "Camargo", country: "España" },
+      { name: "Guarnizo", aliases: ["cd guarnizo"], lat: 43.35, lon: -3.9, city: "El Astillero", country: "España" },
+      { name: "Laredo", aliases: ["cd laredo"], lat: 43.4167, lon: -3.4167, city: "Laredo", country: "España" },
+      { name: "Noja", aliases: ["sd noja"], lat: 43.4833, lon: -3.5167, city: "Noja", country: "España" },
+      { name: "Tropezón", aliases: ["cd tropezon"], lat: 43.35, lon: -4.05, city: "Torrelavega", country: "España" },
+      { name: "Vimenor", aliases: ["vimenor"], lat: 43.4, lon: -3.95, city: "Piélagos", country: "España" },
+      { name: "Amurrio", aliases: ["amurrio club"], lat: 43.05, lon: -3.0, city: "Amurrio", country: "España" },
+      { name: "Aurrera Vitoria", aliases: ["aurrera"], lat: 42.85, lon: -2.6833, city: "Vitoria", country: "España" },
+      { name: "Durango", aliases: ["scd durango"], lat: 43.1667, lon: -2.6333, city: "Durango", country: "España" },
+      { name: "Beasain", aliases: ["sd beasain"], lat: 43.05, lon: -2.2, city: "Beasain", country: "España" },
+      { name: "Alavés C", aliases: ["alaves c"], lat: 42.8372, lon: -2.6881, city: "Vitoria", country: "España" },
+      { name: "Cornellà", aliases: ["ue cornella", "cornellà"], lat: 41.35, lon: 2.07, city: "Cornellà", country: "España" },
+      { name: "Badalona", aliases: ["cf badalona"], lat: 41.45, lon: 2.25, city: "Badalona", country: "España" },
+      { name: "Peralada", aliases: ["cf peralada"], lat: 42.3167, lon: 3.0167, city: "Peralada", country: "España" },
+      { name: "Tona", aliases: ["ue tona"], lat: 41.85, lon: 2.2333, city: "Tona", country: "España" },
+      { name: "L'Hospitalet", aliases: ["hospitalet", "ce l'hospitalet"], lat: 41.35, lon: 2.1, city: "L'Hospitalet", country: "España" },
+      { name: "Grama", aliases: ["fe grama"], lat: 41.45, lon: 2.2167, city: "Santa Coloma de Gramenet", country: "España" },
+      { name: "L'Escala", aliases: ["fc l'escala"], lat: 42.1167, lon: 3.1333, city: "L'Escala", country: "España" },
+      { name: "Cerdanyola", aliases: ["cerdanyola valles"], lat: 41.5, lon: 2.15, city: "Cerdanyola del Vallès", country: "España" },
+      { name: "Mollerussa", aliases: ["cfj mollerussa"], lat: 41.6333, lon: 0.9, city: "Mollerussa", country: "España" },
+      { name: "Montañesa", aliases: ["cf montanesa"], lat: 41.43, lon: 2.18, city: "Barcelona", country: "España" },
+      { name: "San Cristóbal", aliases: ["cp san cristobal"], lat: 41.45, lon: 2.2, city: "Barcelona", country: "España" },
+      { name: "Vic", aliases: ["ue vic"], lat: 41.9333, lon: 2.25, city: "Vic", country: "España" },
+      { name: "Vilanova", aliases: ["cf vilanova"], lat: 41.2167, lon: 1.7167, city: "Vilanova i la Geltrú", country: "España" },
+      { name: "Can Vidalet", aliases: ["cf can vidalet"], lat: 41.3833, lon: 2.05, city: "Esplugues", country: "España" },
+      { name: "Atlètic Lleida", aliases: ["atletic lleida"], lat: 41.6167, lon: 0.6333, city: "Lleida", country: "España" },
+      { name: "Europa B", aliases: ["europa b"], lat: 41.42, lon: 2.16, city: "Barcelona", country: "España" },
+      { name: "Trival Valderas", aliases: ["trival valderas"], lat: 40.35, lon: -3.8, city: "Alcorcón", country: "España" },
+      { name: "Torrejón", aliases: ["ad torrejon"], lat: 40.45, lon: -3.4833, city: "Torrejón de Ardoz", country: "España" },
+      { name: "Las Rozas", aliases: ["las rozas cf"], lat: 40.5, lon: -3.8833, city: "Las Rozas", country: "España" },
+      { name: "Leganés B", aliases: ["leganes b"], lat: 40.3406, lon: -3.7606, city: "Leganés", country: "España" },
+      { name: "Móstoles", aliases: ["cd mostoles"], lat: 40.3167, lon: -3.8667, city: "Móstoles", country: "España" },
+      { name: "Parla", aliases: ["ad parla"], lat: 40.2333, lon: -3.7667, city: "Parla", country: "España" },
+      { name: "Unión Adarve", aliases: ["union adarve"], lat: 40.45, lon: -3.65, city: "Madrid", country: "España" },
+      { name: "Pozuelo", aliases: ["cf pozuelo"], lat: 40.4333, lon: -3.8167, city: "Pozuelo de Alarcón", country: "España" },
+      { name: "Galapagar", aliases: ["cd galapagar"], lat: 40.5833, lon: -4.0, city: "Galapagar", country: "España" },
+      { name: "Carabanchel", aliases: ["rcd carabanchel"], lat: 40.3833, lon: -3.7333, city: "Madrid", country: "España" },
+      { name: "Alcorcón B", aliases: ["alcorcon b"], lat: 40.35, lon: -3.8289, city: "Alcorcón", country: "España" },
+      { name: "Alhaurino", aliases: ["cd alhaurino"], lat: 36.6833, lon: -4.7, city: "Alhaurín el Grande", country: "España" },
+      { name: "Atlético Malagueño", aliases: ["atletico malagueno"], lat: 36.7341, lon: -4.4264, city: "Málaga", country: "España" },
+      { name: "Arenas Armilla", aliases: ["arenas armilla"], lat: 37.1333, lon: -3.6333, city: "Armilla", country: "España" },
+      { name: "Almería B", aliases: ["almeria b"], lat: 36.84, lon: -2.4353, city: "Almería", country: "España" },
+      { name: "Cádiz Mirandilla", aliases: ["cadiz b", "mirandilla"], lat: 36.503, lon: -6.273, city: "Cádiz", country: "España" },
+      { name: "Bollullos", aliases: ["bollullos cf"], lat: 37.3333, lon: -6.5333, city: "Bollullos", country: "España" },
+      { name: "Atlético Onubense", aliases: ["onubense"], lat: 37.2611, lon: -6.9522, city: "Huelva", country: "España" },
+      { name: "Puente Genil", aliases: ["puente genil"], lat: 37.3833, lon: -4.7667, city: "Puente Genil", country: "España" },
+      { name: "Xerez Deportivo", aliases: ["xerez deportivo"], lat: 36.6867, lon: -6.1372, city: "Jerez", country: "España" },
+      { name: "Atlético Pulpileño", aliases: ["pulpileno"], lat: 37.4, lon: -1.75, city: "Pulpí", country: "España" },
+      { name: "Caravaca", aliases: ["ud caravaca"], lat: 38.1, lon: -1.8667, city: "Caravaca de la Cruz", country: "España" },
+      { name: "Cartagena B", aliases: ["cartagena b"], lat: 37.625, lon: -0.9967, city: "Cartagena", country: "España" },
+      { name: "El Palmar", aliases: ["el palmar cf"], lat: 37.9333, lon: -1.1667, city: "El Palmar", country: "España" },
+      { name: "Mazarrón", aliases: ["mazarron fc"], lat: 37.6, lon: -1.3167, city: "Mazarrón", country: "España" },
+      { name: "Olímpico Totana", aliases: ["olimpico totana"], lat: 37.7667, lon: -1.5, city: "Totana", country: "España" },
+      { name: "Santomera", aliases: ["cf santomera"], lat: 38.0667, lon: -1.05, city: "Santomera", country: "España" },
+      { name: "Unión Molinense", aliases: ["union molinense"], lat: 37.9833, lon: -1.13, city: "Murcia", country: "España" },
+      { name: "UCAM Murcia B", aliases: ["ucam b"], lat: 37.9833, lon: -1.13, city: "Murcia", country: "España" },
+      { name: "Águilas B", aliases: ["aguilas b"], lat: 37.4, lon: -1.5833, city: "Águilas", country: "España" },
+      { name: "Yeclano B", aliases: ["yeclano b"], lat: 38.6167, lon: -1.1167, city: "Yecla", country: "España" },
+      { name: "Alcúdia", aliases: ["ud alcudia"], lat: 39.85, lon: 3.1167, city: "Alcúdia", country: "España" },
+      { name: "Binissalem", aliases: ["cd binissalem"], lat: 39.6833, lon: 2.8667, city: "Binissalem", country: "España" },
+      { name: "Constància", aliases: ["cd constancia"], lat: 39.7167, lon: 2.9167, city: "Inca", country: "España" },
+      { name: "Felanitx", aliases: ["cd felanitx"], lat: 39.4667, lon: 3.15, city: "Felanitx", country: "España" },
+      { name: "Formentera", aliases: ["sd formentera"], lat: 38.7167, lon: 1.45, city: "Sant Francesc", country: "España" },
+      { name: "Manacor", aliases: ["cd manacor"], lat: 39.5667, lon: 3.2167, city: "Manacor", country: "España" },
+      { name: "Mercadal", aliases: ["cd mercadal"], lat: 40.0, lon: 4.1, city: "Es Mercadal", country: "España" },
+      { name: "Santañí", aliases: ["cd santanyi"], lat: 39.35, lon: 3.1333, city: "Santañí", country: "España" },
+      { name: "Portmany", aliases: ["sd portmany"], lat: 38.9833, lon: 1.3, city: "Sant Antoni", country: "España" },
+      { name: "Andratx", aliases: ["ce andratx"], lat: 39.5833, lon: 2.4167, city: "Andratx", country: "España" }
+    ];
+
+    // ===== Estado =====
+    const STORAGE_KEY = 'uefa-team-quiz-v4';
+
+    // --- Ligas (por nombre de equipo) ---
+    // El progreso se guarda siempre; el filtro solo afecta a lo visible.
+    const LEAGUE_NAME_SETS = {
+      laliga: new Set([
+        "Real Madrid","FC Barcelona","Atlético de Madrid","Sevilla FC","Real Betis","Valencia CF",
+        "Athletic Club","Real Sociedad","Villarreal CF","RC Celta de Vigo","RCD Espanyol","CA Osasuna",
+        "Getafe CF","Rayo Vallecano","UD Las Palmas","RCD Mallorca","Girona FC","Deportivo Alavés",
+        "Cádiz CF","Elche CF","Real Valladolid","Granada CF","UD Almería","Leganés","CD Leganés",
+        "Levante UD","Real Oviedo","RCD Espanyol"
+      ]),
+      segunda: new Set([
+        "Real Zaragoza","Sporting de Gijón","Deportivo de La Coruña","Málaga CF","SD Eibar",
+        "SD Huesca","Albacete Balompié","Real Racing Club","FC Cartagena","Burgos CF","CD Mirandés",
+        "CD Tenerife","SD Amorebieta","Elche CF","Levante UD","Real Oviedo","Granada CF",
+        "Racing de Ferrol","SD Ponferradina","CD Lugo","CD Eldense","FC Andorra","Cultural y Deportiva Leonesa",
+        "Real Sporting","Sporting de Gijón","Albacete Balompié","CD Castellón","Córdoba CF","Real Murcia CF",
+        "AD Alcorcón","CD Leganés","Huesca","Zaragoza","Tenerife","Deportivo","Racing Santander"
+      ]),
+      primera_rfef: new Set([
+        "AD Mérida","Arenas Club","Athletic Club B","Barakaldo CF","CD Coria","CD Extremadura","CD Lugo",
+        "CD Mirandés","CP Cacereño","Cultural y Deportiva Leonesa","Pontevedra CF","Racing de Ferrol",
+        "RC Deportivo Fabril","Real Avilés Industrial","Real Unión","SD Ponferradina","UD Logroñés",
+        "UD Ourense","Unionistas de Salamanca","Zamora CF","AD Alcorcón","Águilas FC","Algeciras CF",
+        "Antequera CF","Atlético Madrileño","CD Teruel","CE Europa","CF Rayo Majadahonda","FC Cartagena",
+        "Gimnàstic de Tarragona","Hércules CF","Juventud de Torremolinos","Real Jaén CF","Real Madrid Castilla",
+        "Real Murcia CF","Real Zaragoza","SD Huesca","UD Ibiza","UE Sant Andreu","Villarreal CF B",
+        "Real Madrid Castilla","Athletic Club B","Bilbao Athletic"
+      ]),
+      premier: new Set([
+        "Manchester United","Manchester City","Liverpool","Arsenal","Chelsea","Tottenham Hotspur",
+        "Newcastle United","Aston Villa","West Ham United","Brighton & Hove Albion","Everton",
+        "Wolverhampton Wanderers","Crystal Palace","Fulham","Brentford","Nottingham Forest",
+        "Bournemouth","Leicester City","Leeds United","Southampton","Ipswich Town","Sunderland",
+        "Burnley","Sheffield United"
+      ]),
+      championship: new Set([
+        "Sheffield Wednesday","Middlesbrough","Norwich City","Watford","West Bromwich Albion",
+        "Stoke City","Birmingham City","Coventry City","Hull City","Derby County","Blackburn Rovers",
+        "Preston North End","Bristol City","Millwall","Queens Park Rangers","Swansea City",
+        "Cardiff City","Plymouth Argyle","Oxford United","Portsmouth","Luton Town","Charlton Athletic",
+        "Wrexham"
+      ]),
+      bundesliga: new Set([
+        "Bayern München","Borussia Dortmund","RB Leipzig","Bayer Leverkusen","Eintracht Frankfurt",
+        "VfL Wolfsburg","Borussia Mönchengladbach","SC Freiburg","VfB Stuttgart","Werder Bremen",
+        "1. FC Union Berlin","FC Köln","Mainz 05","FC Augsburg","Hoffenheim","Heidenheim",
+        "Holstein Kiel","FC St. Pauli","VfL Bochum"
+      ]),
+      serie_a: new Set([
+        "Inter Milan","AC Milan","Juventus","SSC Napoli","AS Roma","Lazio","Atalanta","Fiorentina",
+        "Torino","Bologna","Udinese","Genoa","Cagliari","Sassuolo","Empoli","Hellas Verona",
+        "Monza","Lecce","Frosinone","Salernitana","Como","Parma","Venezia","Napoli"
+      ]),
+      ligue_1: new Set([
+        "Paris Saint-Germain","Olympique de Marseille","Olympique Lyonnais","AS Monaco","Lille OSC",
+        "OGC Nice","Stade Rennais","RC Lens","FC Nantes","RC Strasbourg","Toulouse FC","Stade de Reims",
+        "Montpellier","Brest","Le Havre","Angers","Auxerre","Saint-Étienne","PSG","Marseille","Lyon","Monaco"
+      ]),
+      eredivisie: new Set([
+        "Ajax","PSV Eindhoven","Feyenoord","AZ Alkmaar","FC Twente","FC Utrecht","Vitesse",
+        "SC Heerenveen","Groningen","Sparta Rotterdam","NEC Nijmegen","Go Ahead Eagles"
+      ]),
+      primeira: new Set([
+        "SL Benfica","FC Porto","Sporting CP","SC Braga","Vitória Guimarães","Boavista","Rio Ave",
+        "Gil Vicente","Famalicão","Moreirense","Estoril","Casa Pia","Arouca","Chaves","Vizela"
+      ]),
+      sco_prem: new Set([
+        "Celtic","Rangers","Aberdeen","Hearts","Hibernian","Motherwell","Kilmarnock","Dundee United",
+        "St Johnstone","Livingston","Ross County","St Mirren"
+      ])
+    };
+
+    function detectLeague(team) {
+      const n = team.name;
+      for (const [id, set] of Object.entries(LEAGUE_NAME_SETS)) {
+        if (set.has(n)) return id;
+      }
+      // Heurísticas por país / nombre
+      if (team.country === 'España' || team.country === 'Andorra') {
+        if (/\bB\b|Atlético|Imperial|Promesas|Fabril|Castilla|Vetusta|Mirandilla|Deportivo$|C$/.test(n)) {
+          // filiales a menudo RFEF
+        }
+        // Resto España: RFEF / Tercera genérico
+        return 'espana_rfef';
+      }
+      if (team.country === 'Inglaterra' || team.country === 'Gales') return 'england_lower';
+      if (team.country === 'Alemania') return 'germany_other';
+      if (team.country === 'Italia') return 'italy_other';
+      if (team.country === 'Francia') return 'france_other';
+      return 'otros';
+    }
+
+    // Ligas disponibles según modo de mapa
+    const LEAGUES_BY_MODE = {
+      uefa: [
+        { id: 'all', label: 'Todas' },
+        { id: 'laliga', label: 'LaLiga' },
+        { id: 'segunda', label: 'Segunda' },
+        { id: 'primera_rfef', label: '1ª RFEF' },
+        { id: 'espana_rfef', label: 'RFEF / Tercera' },
+        { id: 'premier', label: 'Premier' },
+        { id: 'championship', label: 'Championship' },
+        { id: 'england_lower', label: 'EFL lower' },
+        { id: 'bundesliga', label: 'Bundesliga' },
+        { id: 'serie_a', label: 'Serie A' },
+        { id: 'ligue_1', label: 'Ligue 1' },
+        { id: 'eredivisie', label: 'Eredivisie' },
+        { id: 'primeira', label: 'Primeira' },
+        { id: 'sco_prem', label: 'Scottish Prem' },
+        { id: 'otros', label: 'Resto UEFA' }
+      ],
+      espana: [
+        { id: 'all', label: 'Todas' },
+        { id: 'laliga', label: 'LaLiga' },
+        { id: 'segunda', label: 'Segunda' },
+        { id: 'primera_rfef', label: '1ª RFEF' },
+        { id: 'espana_rfef', label: '2ª/3ª RFEF' }
+      ],
+      inglaterra: [
+        { id: 'all', label: 'Todas' },
+        { id: 'premier', label: 'Premier' },
+        { id: 'championship', label: 'Championship' },
+        { id: 'england_lower', label: 'League 1/2' }
+      ]
+    };
+
+    const MODES = {
+      uefa: {
+        id: 'uefa',
+        label: 'UEFA',
+        title: 'UEFA Team Quiz',
+        subtitle: 'Mapa · Clubes europeos',
+        filter: (t) => true,
+        center: [50, 12],
+        zoom: 4,
+        bounds: null,
+        placeholder: 'Escribe un equipo… (Real Madrid, Bayern, Ajax…)',
+        empty: 'Empieza a escribir nombres de equipos de fútbol europeos.<br>Cada acierto coloca un punto rojo en el mapa.'
+      },
+      espana: {
+        id: 'espana',
+        label: 'España',
+        title: 'Spain Team Quiz',
+        subtitle: 'LaLiga → Tercera RFEF · Mapa de España',
+        filter: (t) => t.country === 'España' || t.country === 'Andorra',
+        center: [40.2, -3.7],
+        zoom: 6,
+        bounds: [[35.8, -9.5], [43.9, 4.5]],
+        placeholder: 'Escribe un equipo español… (Real Madrid, Deportivo, Arosa…)',
+        empty: 'Modo España: LaLiga, Segunda, Primera/Segunda/Tercera RFEF.<br>Escribe el nombre de un club y aparecerá en el mapa.'
+      },
+      inglaterra: {
+        id: 'inglaterra',
+        label: 'Inglaterra',
+        title: 'England Team Quiz',
+        subtitle: 'Premier → League Two · Mapa de Inglaterra',
+        filter: (t) => t.country === 'Inglaterra' || t.country === 'Gales',
+        center: [53.0, -1.5],
+        zoom: 6,
+        bounds: [[49.9, -6.5], [55.9, 1.9]],
+        placeholder: 'Escribe un equipo inglés… (Liverpool, Wrexham, Forest…)',
+        empty: 'Modo Inglaterra: Premier League hasta League Two (+ Gales).<br>Escribe el nombre de un club y aparecerá en el mapa.'
+      }
+    };
+
+    let mode = 'uefa';
+    let leagueFilter = 'all'; // filtro visual; no borra progreso
+    let activeTeams = TEAMS.slice();
+    const named = new Set(); // progreso global (por modo se filtra al cambiar)
+    const markers = {};
+    const teamByName = Object.fromEntries(TEAMS.map(t => [t.name, t]));
+    // Precompute league id per team
+    const leagueOf = {};
+    TEAMS.forEach(t => { leagueOf[t.name] = detectLeague(t); });
+
+    let startTime = Date.now();
+    let timerInterval = null;
+
+    // ===== Mapa =====
+    const map = L.map('map', {
+      center: [50, 12],
+      zoom: 4,
+      minZoom: 3,
+      maxZoom: 14,
+      zoomControl: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+
+    function makeIcon(isNew) {
+      return L.divIcon({
+        className: '',
+        html: `<div class="red-dot-wrap${isNew ? ' new' : ''}"><div class="red-dot-pulse"></div><div class="red-dot-core"></div></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      });
+    }
+
+    // ===== Utils =====
+    function normalize(str) {
+      return str.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function teamMatchesLeague(team) {
+      if (leagueFilter === 'all') return true;
+      return leagueOf[team.name] === leagueFilter;
+    }
+
+    // Equipos del modo actual que pertenecen a la liga filtrada (para contadores)
+    function teamsInCurrentScope() {
+      return activeTeams.filter(teamMatchesLeague);
+    }
+
+    function namedInCurrentScope() {
+      return [...named].filter(name => {
+        const t = teamByName[name];
+        return t && activeTeams.some(a => a.name === name) && teamMatchesLeague(t);
+      });
+    }
+
+    function findTeam(query) {
+      const q = normalize(query);
+      if (!q) return null;
+      // Buscar en todo el modo (no solo liga), para no frustrar si el filtro está activo
+      const pool = activeTeams;
+
+      for (const t of pool) {
+        if (normalize(t.name) === q) return t;
+        for (const a of t.aliases) {
+          if (normalize(a) === q) return t;
+        }
+      }
+      if (q.length >= 3) {
+        for (const t of pool) {
+          if (normalize(t.name).startsWith(q)) return t;
+          for (const a of t.aliases) {
+            if (normalize(a).startsWith(q)) return t;
+          }
+        }
+      }
+      if (q.length >= 4) {
+        for (const t of pool) {
+          if (normalize(t.name).includes(q)) return t;
+          for (const a of t.aliases) {
+            if (normalize(a).includes(q)) return t;
+          }
+        }
+      }
+      return null;
+    }
+
+    function formatTime(ms) {
+      const s = Math.floor(ms / 1000);
+      const m = Math.floor(s / 60);
+      const h = Math.floor(m / 60);
+      const ss = String(s % 60).padStart(2, '0');
+      const mm = String(m % 60).padStart(2, '0');
+      if (h > 0) return `${h}:${mm}:${ss}`;
+      return `${mm}:${ss}`;
+    }
+
+    function showFeedback(text, type) {
+      const el = document.getElementById('feedback');
+      el.textContent = text;
+      el.className = type + ' show';
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.remove('show'), 1600);
+    }
+
+    // ===== UI =====
+    function updateScore() {
+      const scope = teamsInCurrentScope();
+      const got = namedInCurrentScope();
+      const n = got.length;
+      const tot = scope.length;
+      document.getElementById('score-num').textContent = n;
+      document.getElementById('score-label').textContent = '/ ' + tot;
+      const pct = tot ? Math.round((n / tot) * 100) : 0;
+      document.getElementById('pct').textContent = pct + '%';
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('remaining').textContent = (tot - n) + ' restantes';
+      renderLeagueChips();
+    }
+
+    function rebuildList() {
+      const ul = document.getElementById('named-list');
+      const cfg = MODES[mode];
+      const visible = namedInCurrentScope();
+      if (visible.length === 0) {
+        const hint = leagueFilter === 'all'
+          ? cfg.empty
+          : 'Filtro de liga activo: aún no has acertado equipos de esta liga.<br>Sigue escribiendo; el progreso de otras ligas está guardado.';
+        ul.innerHTML = `<li class="empty-state" style="display:block;list-style:none;border:none;">
+          <div class="icon">🏟️</div>
+          <p>${hint}</p>
+        </li>`;
+        return;
+      }
+      const items = visible.map(name => teamByName[name]).filter(Boolean);
+      const html = items.reverse().map(t =>
+        `<li data-name="${t.name.replace(/"/g, '&quot;')}">
+          <span class="team-name">${t.name}</span>
+          <span class="team-loc">${t.city}, ${t.country}</span>
+        </li>`
+      ).join('');
+      ul.innerHTML = html;
+    }
+
+    function updateCountryStats() {
+      const box = document.getElementById('country-stats');
+      const visible = namedInCurrentScope();
+      if (visible.length === 0) {
+        box.innerHTML = `<div class="empty-state"><div class="icon">🌍</div><p>Aquí verás cuántos equipos has acertado por país.</p></div>`;
+        return;
+      }
+      const counts = {};
+      for (const name of visible) {
+        const t = teamByName[name];
+        if (!t) continue;
+        counts[t.country] = (counts[t.country] || 0) + 1;
+      }
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const max = sorted[0][1];
+      box.innerHTML = sorted.map(([country, n]) => `
+        <div class="country-row">
+          <span class="c-name">${country}</span>
+          <div class="bar-wrap"><div class="bar" style="width:${(n / max) * 100}%"></div></div>
+          <span class="c-count">${n}</span>
+        </div>
+      `).join('');
+    }
+
+    // Marcadores: se crean para TODO lo acertado del modo;
+    // el filtro de liga solo muestra/oculta capas.
+    function placeMarker(team, isNew = false) {
+      if (markers[team.name]) {
+        syncMarkerVisibility(team.name);
+        return;
+      }
+      const m = L.marker([team.lat, team.lon], { icon: makeIcon(isNew) })
+        .bindPopup(`<strong>${team.name}</strong><br>${team.city}, ${team.country}`);
+      markers[team.name] = m;
+      syncMarkerVisibility(team.name);
+      if (isNew && teamMatchesLeague(team) && namedInCurrentScope().length <= 8) {
+        map.setView([team.lat, team.lon], Math.max(map.getZoom(), mode === 'uefa' ? 5 : 7), { animate: true });
+      }
+    }
+
+    function syncMarkerVisibility(name) {
+      const t = teamByName[name];
+      const m = markers[name];
+      if (!t || !m) return;
+      const show = named.has(name) && activeTeams.some(a => a.name === name) && teamMatchesLeague(t);
+      if (show) {
+        if (!map.hasLayer(m)) m.addTo(map);
+      } else {
+        if (map.hasLayer(m)) map.removeLayer(m);
+      }
+    }
+
+    function syncAllMarkersVisibility() {
+      Object.keys(markers).forEach(syncMarkerVisibility);
+    }
+
+    function clearMarkers() {
+      Object.values(markers).forEach(m => {
+        if (map.hasLayer(m)) map.removeLayer(m);
+      });
+      for (const k in markers) delete markers[k];
+    }
+
+    function applyMapView(cfg) {
+      if (cfg.bounds) {
+        map.fitBounds(cfg.bounds, { animate: true, padding: [20, 20] });
+      } else {
+        map.setView(cfg.center, cfg.zoom, { animate: true });
+      }
+    }
+
+    function renderLeagueChips() {
+      const box = document.getElementById('league-chips');
+      const list = LEAGUES_BY_MODE[mode] || LEAGUES_BY_MODE.uefa;
+      box.innerHTML = list.map(L => {
+        const tot = L.id === 'all'
+          ? activeTeams.length
+          : activeTeams.filter(t => leagueOf[t.name] === L.id).length;
+        const got = L.id === 'all'
+          ? [...named].filter(n => activeTeams.some(a => a.name === n)).length
+          : [...named].filter(n => {
+              const t = teamByName[n];
+              return t && activeTeams.some(a => a.name === n) && leagueOf[n] === L.id;
+            }).length;
+        // Ocultar chips vacíos (0 equipos en dataset) excepto "Todas"
+        if (L.id !== 'all' && tot === 0) return '';
+        const active = leagueFilter === L.id ? ' active' : '';
+        return `<button type="button" class="league-chip${active}" data-league="${L.id}">${L.label}<span class="chip-count">${got}/${tot}</span></button>`;
+      }).join('');
+    }
+
+    function setLeagueFilter(id) {
+      leagueFilter = id;
+      rebuildList();
+      updateCountryStats();
+      updateScore();
+      syncAllMarkersVisibility();
+      // Ajustar vista a marcadores visibles de la liga
+      const visibleLayers = Object.entries(markers)
+        .filter(([name, m]) => map.hasLayer(m))
+        .map(([, m]) => m);
+      if (visibleLayers.length >= 2) {
+        map.fitBounds(L.featureGroup(visibleLayers).getBounds().pad(0.2), { animate: true, maxZoom: 8 });
+      } else if (visibleLayers.length === 1) {
+        map.setView(visibleLayers[0].getLatLng(), 8, { animate: true });
+      } else if (leagueFilter !== 'all') {
+        // Sin puntos aún: mantener vista del modo
+        applyMapView(MODES[mode]);
+      }
+      save();
+    }
+
+    function setMode(newMode) {
+      if (!MODES[newMode]) return;
+      mode = newMode;
+      leagueFilter = 'all';
+      const cfg = MODES[mode];
+      activeTeams = TEAMS.filter(cfg.filter);
+
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+      document.getElementById('brand-title').innerHTML =
+        cfg.title + '<span id="brand-sub">' + cfg.subtitle + '</span>';
+      document.getElementById('team-input').placeholder = cfg.placeholder;
+
+      clearMarkers();
+      named.clear();
+      startTime = Date.now();
+
+      // Restaurar named desde storage específico se hace en load; aquí reset al cambiar modo manualmente
+      rebuildList();
+      updateCountryStats();
+      updateScore();
+      applyMapView(cfg);
+      save();
+      document.getElementById('team-input').focus();
+    }
+
+    // ===== Persistence =====
+    function save() {
+      const data = {
+        mode,
+        leagueFilter,
+        named: [...named],
+        startTime,
+        // Guardar named por modo para no perder al cambiar
+        namedByMode: loadNamedByMode()
+      };
+      data.namedByMode[mode] = [...named];
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+    }
+
+    function loadNamedByMode() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return {};
+        const data = JSON.parse(raw);
+        return data.namedByMode || {};
+      } catch (e) { return {}; }
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) { return null; }
+    }
+
+    // ===== Actions =====
+    function addTeam(team) {
+      named.add(team.name);
+      placeMarker(team, true);
+      rebuildList();
+      updateCountryStats();
+      updateScore();
+      save();
+    }
+
+    function resetAll() {
+      named.clear();
+      clearMarkers();
+      startTime = Date.now();
+      leagueFilter = 'all';
+      rebuildList();
+      updateCountryStats();
+      updateScore();
+      applyMapView(MODES[mode]);
+      save();
+      showFeedback('Partida reiniciada', 'ok');
+    }
+
+    function fitMarkers() {
+      const layers = Object.values(markers).filter(m => map.hasLayer(m));
+      if (layers.length === 0) {
+        showFeedback('Aún no hay puntos visibles', 'err');
+        return;
+      }
+      if (layers.length === 1) {
+        map.setView(layers[0].getLatLng(), 9, { animate: true });
+        return;
+      }
+      map.fitBounds(L.featureGroup(layers).getBounds().pad(0.15), { animate: true });
+    }
+
+    async function shareScore() {
+      const scope = teamsInCurrentScope();
+      const got = namedInCurrentScope();
+      const n = got.length;
+      const tot = scope.length;
+      const pct = tot ? Math.round((n / tot) * 100) : 0;
+      const time = formatTime(Date.now() - startTime);
+      const leagueLabel = (LEAGUES_BY_MODE[mode] || []).find(l => l.id === leagueFilter)?.label || 'Todas';
+      const text = `⚽ ${MODES[mode].title}\n${n}/${tot} equipos (${pct}%) · ${MODES[mode].label} · Liga: ${leagueLabel} · ${time}\n¿Puedes superarme?`;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: MODES[mode].title, text });
+        } else {
+          await navigator.clipboard.writeText(text);
+          showFeedback('¡Copiado al portapapeles!', 'ok');
+        }
+      } catch (e) {
+        try {
+          await navigator.clipboard.writeText(text);
+          showFeedback('¡Copiado al portapapeles!', 'ok');
+        } catch (e2) {
+          showFeedback('No se pudo compartir', 'err');
+        }
+      }
+    }
+
+    // ===== Events =====
+    const input = document.getElementById('team-input');
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (!val) return;
+
+        const team = findTeam(val);
+        if (!team) {
+          showFeedback('No encontrado en este mapa', 'err');
+          return;
+        }
+        if (named.has(team.name)) {
+          showFeedback('Ya lo tienes', 'err');
+          input.value = '';
+          return;
+        }
+
+        addTeam(team);
+        // Si hay filtro de liga y el equipo no es de esa liga, avisar pero guardar
+        if (leagueFilter !== 'all' && !teamMatchesLeague(team)) {
+          showFeedback('¡Guardado! (otra liga: cambia el filtro para verlo)', 'ok');
+        } else {
+          showFeedback('¡Correcto! ' + team.name, 'ok');
+        }
+        input.value = '';
+      }
+    });
+
+    document.getElementById('named-list').addEventListener('click', (e) => {
+      const li = e.target.closest('li[data-name]');
+      if (!li) return;
+      const name = li.getAttribute('data-name');
+      const mkr = markers[name];
+      if (mkr && map.hasLayer(mkr)) {
+        map.setView(mkr.getLatLng(), Math.max(map.getZoom(), 9), { animate: true });
+        mkr.openPopup();
+      }
+    });
+
+    document.querySelectorAll('.aside-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.aside-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.aside-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.mode === mode) return;
+        // Guardar progreso del modo actual antes de cambiar
+        const byMode = loadNamedByMode();
+        byMode[mode] = [...named];
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          const data = raw ? JSON.parse(raw) : {};
+          data.namedByMode = byMode;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {}
+
+        mode = btn.dataset.mode;
+        leagueFilter = 'all';
+        const cfg = MODES[mode];
+        activeTeams = TEAMS.filter(cfg.filter);
+
+        document.querySelectorAll('.mode-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.mode === mode);
+        });
+        document.getElementById('brand-title').innerHTML =
+          cfg.title + '<span id="brand-sub">' + cfg.subtitle + '</span>';
+        document.getElementById('team-input').placeholder = cfg.placeholder;
+
+        clearMarkers();
+        named.clear();
+        const restored = (loadNamedByMode()[mode] || []);
+        restored.forEach(name => {
+          if (teamByName[name] && activeTeams.some(a => a.name === name)) {
+            named.add(name);
+            placeMarker(teamByName[name], false);
+          }
+        });
+        startTime = Date.now();
+        rebuildList();
+        updateCountryStats();
+        updateScore();
+        applyMapView(cfg);
+        save();
+        showFeedback('Mapa: ' + MODES[mode].label, 'ok');
+        input.focus();
+      });
+    });
+
+    document.getElementById('league-chips').addEventListener('click', (e) => {
+      const chip = e.target.closest('.league-chip');
+      if (!chip) return;
+      const id = chip.dataset.league;
+      if (!id || id === leagueFilter) return;
+      setLeagueFilter(id);
+      const label = chip.textContent.replace(/\d+\/\d+/, '').trim();
+      showFeedback('Filtro: ' + label, 'ok');
+    });
+
+    document.getElementById('btn-fit').addEventListener('click', fitMarkers);
+    document.getElementById('btn-share').addEventListener('click', shareScore);
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      document.getElementById('modal-reset').classList.add('show');
+    });
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+      document.getElementById('modal-reset').classList.remove('show');
+    });
+    document.getElementById('modal-confirm').addEventListener('click', () => {
+      document.getElementById('modal-reset').classList.remove('show');
+      resetAll();
+    });
+    document.getElementById('modal-reset').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-reset') e.target.classList.remove('show');
+    });
+
+    function tick() {
+      document.getElementById('timer').textContent = '⏱ ' + formatTime(Date.now() - startTime);
+    }
+
+    // ===== Init =====
+    const saved = load();
+    if (saved) {
+      if (saved.mode && MODES[saved.mode]) mode = saved.mode;
+      if (saved.leagueFilter) leagueFilter = saved.leagueFilter;
+      if (saved.startTime) startTime = saved.startTime;
+      const byMode = saved.namedByMode || {};
+      const list = byMode[mode] || saved.named || [];
+      list.forEach(name => {
+        if (teamByName[name]) named.add(name);
+      });
+    }
+
+    activeTeams = TEAMS.filter(MODES[mode].filter);
+    const allowed = new Set(activeTeams.map(t => t.name));
+    for (const n of [...named]) {
+      if (!allowed.has(n)) named.delete(n);
+    }
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    const cfg = MODES[mode];
+    document.getElementById('brand-title').innerHTML =
+      cfg.title + '<span id="brand-sub">' + cfg.subtitle + '</span>';
+    document.getElementById('team-input').placeholder = cfg.placeholder;
+
+    for (const name of named) {
+      const t = teamByName[name];
+      if (t) placeMarker(t, false);
+    }
+
+    rebuildList();
+    updateCountryStats();
+    updateScore();
+    applyMapView(cfg);
+    tick();
+    timerInterval = setInterval(tick, 1000);
+    input.focus();
+
+  </script>
+</body>
+</html>
