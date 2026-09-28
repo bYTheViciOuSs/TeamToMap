@@ -1684,7 +1684,7 @@ const TEAMS = [
       { name: "Mercadal", aliases: ["cd mercadal"], lat: 40.0, lon: 4.1, city: "Es Mercadal", country: "España" },
       { name: "Santañí", aliases: ["cd santanyi"], lat: 39.35, lon: 3.1333, city: "Santañí", country: "España" },
       { name: "Portmany", aliases: ["sd portmany"], lat: 38.9833, lon: 1.3, city: "Sant Antoni", country: "España" },
-      { name: "Andratx", aliases: ["ce andratx"], lat: 39.5833, lon: 2.4167, city: "Andratx", country: "España" }
+      { name: "Andratx", aliases: ["ce andratx"], lat: 39.5833, lon: 2.4167, city: "Andratx", country: "España" },
     
       // ===== AMÉRICA =====
       { name: "Club América", aliases: ["america", "las aguilas", "club america"], lat: 19.3029, lon: -99.1505, city: "Ciudad de México", country: "México", region: "america" },
@@ -2319,6 +2319,18 @@ const TEAMS = [
         bounds: [[49.9, -6.5], [55.9, 1.9]],
         placeholder: 'Escribe un equipo inglés… (Liverpool, Wrexham, Forest…)',
         empty: 'Modo Inglaterra: Premier League hasta League Two (+ Gales).<br>Escribe el nombre de un club y aparecerá en el mapa.'
+      },
+      america: {
+        id: 'america',
+        label: 'América',
+        title: 'TeamToMap',
+        subtitle: 'CONMEBOL + Concacaf · Canadá → Argentina',
+        filter: (t) => t.region === 'america',
+        center: [5, -75],
+        zoom: 3,
+        bounds: [[-56, -130], [72, -34]],
+        placeholder: 'Escribe un equipo americano… (Boca, Flamengo, América…)',
+        empty: 'Modo América: clubes de norte, centro y sudamérica.<br>Escribe el nombre y aparecerá en el mapa.'
       }
     };
 
@@ -2466,19 +2478,7 @@ const TEAMS = [
       const html = items.reverse().map(t =>
         `<li data-name="${t.name.replace(/"/g, '&quot;')}">
           <span class="team-name">${t.name}</span>
-          <span class="team-loc">${t.city},
-      america: {
-        id: 'america',
-        label: 'América',
-        title: 'TeamToMap',
-        subtitle: 'CONMEBOL + Concacaf · Canadá → Argentina',
-        filter: (t) => t.region === 'america',
-        center: [5, -75],
-        zoom: 3,
-        bounds: [[-56, -130], [72, -34]],
-        placeholder: 'Escribe un equipo americano… (Boca, Flamengo, América…)',
-        empty: 'Modo América: clubes de norte, centro y sudamérica.<br>Escribe el nombre y aparecerá en el mapa.'
-      }, ${t.country}</span>
+          <span class="team-loc">${t.city}, ${t.country}</span>
         </li>`
       ).join('');
       ul.innerHTML = html;
