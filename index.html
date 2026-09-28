@@ -713,6 +713,37 @@
     .feedback.ok {
       border-color: rgba(52,211,153,0.4) !important;
     }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+    @media (max-width: 720px) {
+    }
+
+  
+    .visits-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .visits-pill .visits-ico { font-size: 0.85rem; opacity: 0.9; }
+    .visits-pill .visits-label { color: var(--muted); font-weight: 600; }
+    .visits-pill strong {
+      color: #f5c518;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    @media (max-width: 720px) {
+      .visits-pill { font-size: 0.65rem; padding: 5px 8px; }
+      .visits-pill .visits-label { display: none; }
+    }
 
   </style>
 </head>
@@ -734,6 +765,11 @@
       <div class="score-pill" id="score-pill">
         <strong id="score-num">0</strong>
         <span id="score-label">/ 0</span>
+      </div>
+      <div class="visits-pill" id="visits-pill" title="Visitas totales a TeamToMap">
+        <span class="visits-ico" aria-hidden="true">👁</span>
+        <span class="visits-label">Visitas</span>
+        <strong id="visits-num">–</strong>
       </div>
 
       <div class="input-wrap">
@@ -2894,5 +2930,37 @@ const TEAMS = [
     input.focus();
 
   </script>
+
+
+  <script>
+  (function () {
+    var KEY = 'ttm_visit_v2';
+    var el = document.getElementById('visits-num');
+    if (!el) return;
+    var base = 'https://api.counterapi.dev/v1/teamtomap/pageviews';
+    function show(n) {
+      if (n == null || isNaN(n)) { el.textContent = '–'; return; }
+      el.textContent = Number(n).toLocaleString('es');
+    }
+    function get() {
+      return fetch(base).then(function (r) { return r.json(); });
+    }
+    function hit() {
+      return fetch(base + '/up').then(function (r) { return r.json(); });
+    }
+    var already = false;
+    try { already = sessionStorage.getItem(KEY) === '1'; } catch (e) {}
+    (already ? get() : hit())
+      .then(function (data) {
+        var n = data && (data.value != null ? data.value : data.count);
+        show(n);
+        if (!already) {
+          try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+        }
+      })
+      .catch(function () { el.textContent = '–'; });
+  })();
+  </script>
+
 </body>
 </html>
