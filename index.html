@@ -769,7 +769,7 @@
       <div class="visits-pill" id="visits-pill" title="Visitas totales a TeamToMap">
         <span class="visits-ico" aria-hidden="true">👁</span>
         <span class="visits-label">Visitas</span>
-        <strong id="visits-num">–</strong>
+        <strong id="visits-num">…</strong>
       </div>
 
       <div class="input-wrap">
@@ -2934,31 +2934,49 @@ const TEAMS = [
 
   <script>
   (function () {
-    var KEY = 'ttm_visit_v2';
     var el = document.getElementById('visits-num');
     if (!el) return;
-    var base = 'https://api.counterapi.dev/v1/teamtomap/pageviews';
+
+    var SESSION = 'ttm_session_v4';
+    var CACHE = 'ttm_cache_v4';
+
     function show(n) {
-      if (n == null || isNaN(n)) { el.textContent = '–'; return; }
-      el.textContent = Number(n).toLocaleString('es');
+      n = parseInt(n, 10);
+      if (isNaN(n) || n < 0) return;
+      el.textContent = n.toLocaleString('es');
+      try { localStorage.setItem(CACHE, String(n)); } catch (e) {}
     }
-    function get() {
-      return fetch(base).then(function (r) { return r.json(); });
-    }
-    function hit() {
-      return fetch(base + '/up').then(function (r) { return r.json(); });
-    }
-    var already = false;
-    try { already = sessionStorage.getItem(KEY) === '1'; } catch (e) {}
-    (already ? get() : hit())
+
+    try {
+      var c = localStorage.getItem(CACHE);
+      if (c) show(c);
+    } catch (e) {}
+
+    var counted = false;
+    try { counted = sessionStorage.getItem(SESSION) === '1'; } catch (e) {}
+
+    var url = counted
+      ? 'https://abacus.jasoncameron.dev/get/teamtomap/visits'
+      : 'https://abacus.jasoncameron.dev/hit/teamtomap/visits';
+
+    fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('fail');
+        return r.json();
+      })
       .then(function (data) {
-        var n = data && (data.value != null ? data.value : data.count);
+        var n = data && data.value;
+        if (n == null) n = data && data.count;
         show(n);
-        if (!already) {
-          try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+        if (!counted) {
+          try { sessionStorage.setItem(SESSION, '1'); } catch (e) {}
         }
       })
-      .catch(function () { el.textContent = '–'; });
+      .catch(function () {
+        if (!el.textContent || el.textContent === '…' || el.textContent === '–') {
+          el.textContent = '–';
+        }
+      });
   })();
   </script>
 
