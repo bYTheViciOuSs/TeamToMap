@@ -1765,7 +1765,7 @@ const TEAMS = [
       { name: "Guarani", aliases: ["guarani", "guarani fc"], lat: -22.91, lon: -47.06, city: "Campinas", country: "Brasil", region: "america" },
       { name: "Ponte Preta", aliases: ["ponte preta"], lat: -22.9105, lon: -47.061, city: "Campinas", country: "Brasil", region: "america" },
       { name: "Boca Juniors", aliases: ["boca", "boca juniors", "xeneize"], lat: -34.6355, lon: -58.3647, city: "Buenos Aires", country: "Argentina", region: "america" },
-      { name: "River Plate", aliases: ["river", "river plate", "millonarios"], lat: -34.5454, lon: -58.4495, city: "Buenos Aires", country: "Argentina", region: "america" },
+      { name: "River Plate", aliases: ["river", "river plate", "el millonario", "los millonarios"], lat: -34.5454, lon: -58.4495, city: "Buenos Aires", country: "Argentina", region: "america" },
       { name: "Racing Club", aliases: ["racing", "racing club", "la academia"], lat: -34.6675, lon: -58.3686, city: "Avellaneda", country: "Argentina", region: "america" },
       { name: "Independiente", aliases: ["independiente", "el rojo"], lat: -34.6703, lon: -58.3706, city: "Avellaneda", country: "Argentina", region: "america" },
       { name: "San Lorenzo", aliases: ["san lorenzo", "cuervo"], lat: -34.6515, lon: -58.44, city: "Buenos Aires", country: "Argentina", region: "america" },
@@ -1792,7 +1792,7 @@ const TEAMS = [
       { name: "Tigre", aliases: ["tigre", "matador"], lat: -34.425, lon: -58.577, city: "Victoria", country: "Argentina", region: "america" },
       { name: "Arsenal de Sarandí", aliases: ["arsenal", "arsenal sarandi"], lat: -34.68, lon: -58.34, city: "Sarandí", country: "Argentina", region: "america" },
       { name: "Atlético Nacional", aliases: ["atletico nacional", "nacional medellin"], lat: 6.256, lon: -75.59, city: "Medellín", country: "Colombia", region: "america" },
-      { name: "Millonarios", aliases: ["millonarios", "millos"], lat: 4.646, lon: -74.124, city: "Bogotá", country: "Colombia", region: "america" },
+      { name: "Millonarios", aliases: ["millonarios", "millos", "millonarios bogota", "millonarios bogotá", "millonarios fc"], lat: 4.646, lon: -74.124, city: "Bogotá", country: "Colombia", region: "america" },
       { name: "América de Cali", aliases: ["america de cali", "américa cali"], lat: 3.428, lon: -76.54, city: "Cali", country: "Colombia", region: "america" },
       { name: "Deportivo Cali", aliases: ["deportivo cali", "cali"], lat: 3.4285, lon: -76.5405, city: "Cali", country: "Colombia", region: "america" },
       { name: "Junior", aliases: ["junior", "junior barranquilla"], lat: 10.927, lon: -74.8, city: "Barranquilla", country: "Colombia", region: "america" },
@@ -2399,32 +2399,46 @@ const TEAMS = [
     function findTeam(query) {
       const q = normalize(query);
       if (!q) return null;
-      // Buscar en todo el modo (no solo liga), para no frustrar si el filtro está activo
       const pool = activeTeams;
+      let best = null;
+      let bestScore = 0;
 
       for (const t of pool) {
-        if (normalize(t.name) === q) return t;
+        const nName = normalize(t.name);
+        let score = 0;
+
+        // Nombre exacto = máxima prioridad
+        if (nName === q) score = 1000;
+        // Alias exacto
         for (const a of t.aliases) {
-          if (normalize(a) === q) return t;
+          const na = normalize(a);
+          if (na === q) score = Math.max(score, 900);
+          // Alias exacto más largo que la query no aplica; si query contiene alias corto no
         }
-      }
-      if (q.length >= 3) {
-        for (const t of pool) {
-          if (normalize(t.name).startsWith(q)) return t;
+        // Empieza por (solo si query suficientemente específica)
+        if (score === 0 && q.length >= 3) {
+          if (nName.startsWith(q)) score = Math.max(score, 500 + Math.min(nName.length, 40));
           for (const a of t.aliases) {
-            if (normalize(a).startsWith(q)) return t;
+            const na = normalize(a);
+            if (na.startsWith(q)) score = Math.max(score, 450 + Math.min(na.length, 40));
           }
         }
-      }
-      if (q.length >= 4) {
-        for (const t of pool) {
-          if (normalize(t.name).includes(q)) return t;
+        // Contiene (solo queries largas; evita que "river" robe cosas raras)
+        if (score === 0 && q.length >= 5) {
+          if (nName.includes(q)) score = Math.max(score, 200 + q.length);
           for (const a of t.aliases) {
-            if (normalize(a).includes(q)) return t;
+            const na = normalize(a);
+            if (na.includes(q)) score = Math.max(score, 150 + q.length);
           }
         }
+
+        // Preferir nombre más corto en empate (más específico / menos genérico)
+        if (score > bestScore || (score === bestScore && score > 0 && best && nName.length < normalize(best.name).length)) {
+          bestScore = score;
+          best = t;
+        }
       }
-      return null;
+      return bestScore > 0 ? best : null;
     }
 
     function formatTime(ms) {
